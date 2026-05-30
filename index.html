@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Starlink | Connexion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght=700&family=Roboto:wght=400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #0f172a; color: white; }
+        .logo-wrapper { text-align: center; margin-bottom: 30px; }
+        .logo-container {
+            display: inline-block; background: #38bdf8; padding: 10px 20px; border: 3px solid white;
+            border-radius: 8px; position: relative; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+        }
+        .v-top {
+            background: #38bdf8; border: 3px solid white; border-bottom: none; width: 40px; height: 40px;
+            position: absolute; top: -38px; left: 50%; transform: translateX(-50%); display: flex;
+            align-items: center; justify-content: center; color: #0f172a; font-family: 'Oswald', sans-serif;
+            font-size: 24px; font-weight: bold; border-radius: 5px 5px 0 0;
+        }
+        .main-text {
+            color: #0f172a; font-family: 'Oswald', sans-serif; font-size: 28px;
+            display: flex; align-items: center; gap: 8px; font-weight: bold;
+        }
+        .input-group {
+            background: rgba(255, 255, 255, 0.95); border-radius: 10px; padding: 12px 15px;
+            margin-bottom: 15px; display: flex; align-items: center; border: 2px solid #38bdf8;
+        }
+        .input-group input { background: transparent; border: none; width: 100%; color: #333; outline: none; font-size: 15px; }
+        .btn-login {
+            background-color: #38bdf8; color: #0f172a; width: 100%; padding: 15px; border-radius: 50px;
+            font-weight: 900; text-transform: uppercase; margin-top: 10px; transition: 0.3s;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6">
+
+    <div class="w-full max-w-sm">
+        <div class="logo-wrapper">
+            <div class="logo-container">
+                <div class="v-top">S</div>
+                <div class="main-text">STARLINK <i class="fa-solid fa-satellite text-xl text-[#0f172a]"></i></div>
+            </div>
+        </div>
+
+        <p class="text-center mb-8 font-bold text-lg tracking-wider text-[#38bdf8]">CONNEXION</p>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="tel" id="phone" placeholder="Numéro de téléphone" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="pin" placeholder="Mot de passe (6 chiffres)" inputmode="numeric" maxlength="6" required>
+            </div>
+            <button type="submit" id="loginBtn" class="btn-login">SE CONNECTER</button>
+        </form>
+
+        <div class="mt-8 text-center">
+            <p class="text-white">Pas encore membre ? <a href="register.html" class="font-bold text-[#38bdf8] underline">Inscrivez-vous</a></p>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://canal-e4274-default-rtdb.firebaseio.com/" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const phone = document.getElementById('phone').value;
+            const pin = document.getElementById('pin').value;
+            const btn = document.getElementById('loginBtn');
+
+            btn.disabled = true;
+            btn.innerText = "VÉRIFICATION...";
+
+            db.ref('users').orderByChild('phone').equalTo(phone).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    let user;
+                    snapshot.forEach(child => { user = child.val(); });
+                    if (user.password === pin) {
+                        alert("Connexion réussie !");
+                        window.location.href = "dashboard.html";
+                    } else {
+                        alert("Mot de passe incorrect.");
+                        btn.disabled = false; btn.innerText = "SE CONNECTER";
+                    }
+                } else {
+                    alert("Numéro non trouvé.");
+                    btn.disabled = false; btn.innerText = "SE CONNECTER";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
