@@ -78,7 +78,6 @@
     <script>
         const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
         const userPhone = localStorage.getItem('userPhone');
-        const myInviteCode = userPhone ? userPhone.slice(-6) : "";
 
         function switchTab(e, id) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -99,8 +98,8 @@
                 if (!users) return;
 
                 let total = 0;
-                let lv1Codes = [];
-                let lv2Codes = [];
+                let lv1List = [];
+                let lv2List = [];
 
                 const fill = (containerId, phone, investment) => {
                     document.getElementById(containerId).innerHTML += `
@@ -108,7 +107,7 @@
                             <div style="display:flex; align-items:center; gap:12px;">
                                 <div class="member-avatar"><i class="fas fa-user"></i></div>
                                 <div class="member-details">
-                                    <h4>${phone.replace(/(\d{3})\d{3}(\d{3})/, '$1xxx$2')}</h4>
+                                    <h4>${phone}</h4>
                                     <p>Investi: ${investment.toLocaleString()} FC</p>
                                 </div>
                             </div>
@@ -118,45 +117,39 @@
                         </div>`;
                 };
 
-                // 1. Identification Lv1 et Calculs
+                // 1. Identification Lv1 (ceux parrainés directement par l'utilisateur connecté)
                 for (let phone in users) {
-                    let u = users[phone];
-                    let inv = 0;
-                    if (purchases && purchases[phone]) {
-                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
-                    }
-
-                    if (u.referredBy === myInviteCode) {
-                        lv1Codes.push(phone.slice(-6));
+                    if (users[phone].referredBy === userPhone) {
+                        let inv = 0;
+                        if (purchases && purchases[phone]) {
+                            Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
+                        }
+                        lv1List.push(phone);
                         total += inv;
                         fill('lv1', phone, inv);
                     }
                 }
 
-                // 2. Identification Lv2
+                // 2. Identification Lv2 (parrainés par un Lv1)
                 for (let phone in users) {
-                    let u = users[phone];
-                    let inv = 0;
-                    if (purchases && purchases[phone]) {
-                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
-                    }
-
-                    if (lv1Codes.includes(u.referredBy)) {
-                        lv2Codes.push(phone.slice(-6));
+                    if (lv1List.includes(users[phone].referredBy)) {
+                        let inv = 0;
+                        if (purchases && purchases[phone]) {
+                            Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
+                        }
+                        lv2List.push(phone);
                         total += inv;
                         fill('lv2', phone, inv);
                     }
                 }
 
-                // 3. Identification Lv3
+                // 3. Identification Lv3 (parrainés par un Lv2)
                 for (let phone in users) {
-                    let u = users[phone];
-                    let inv = 0;
-                    if (purchases && purchases[phone]) {
-                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
-                    }
-
-                    if (lv2Codes.includes(u.referredBy)) {
+                    if (lv2List.includes(users[phone].referredBy)) {
+                        let inv = 0;
+                        if (purchases && purchases[phone]) {
+                            Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
+                        }
                         total += inv;
                         fill('lv3', phone, inv);
                     }
