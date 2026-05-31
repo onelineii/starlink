@@ -140,7 +140,7 @@
         <a href="regles.html" class="service-item"><div class="service-icon"><i class="fas fa-file-alt"></i></div>Règles</a>
         <a href="https://t.me/serv0754" class="service-item"><div class="service-icon"><i class="fas fa-headset"></i></div>Support</a>
         <a href="#" class="service-item"><div class="service-icon"><i class="fas fa-download"></i></div>App</a>
-        <a href="#" class="service-item"><div class="service-icon"><i class="fas fa-credit-card"></i></div>Carte</a>
+        <a href="carte.html" class="service-item"><div class="service-icon"><i class="fas fa-credit-card"></i></div>Lier Carte</a>
         <a href="#" class="service-item"><div class="service-icon"><i class="fas fa-key"></i></div>Sécurité</a>
         <a href="taches.html" class="service-item"><div class="service-icon"><i class="fas fa-gift"></i></div>Cadeau</a>
         <div onclick="logout()" class="service-item"><div class="service-icon" style="color: #f87171;"><i class="fas fa-sign-out-alt"></i></div>Quitter</div>
@@ -167,7 +167,24 @@
         async function loadProfileData() {
             try {
                 const response = await fetch(`${dbUrl}/${userPhone}.json`);
-                const currentUser = await response.json();
+                let currentUser = await response.json();
+
+                // Logique du bonus d'inscription de 1000 FC
+                if (currentUser && !currentUser.hasBonus) {
+                    const nouveauSolde = (currentUser.balance || 0) + 1000;
+                    
+                    await fetch(`${dbUrl}/${userPhone}.json`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ 
+                            balance: nouveauSolde, 
+                            hasBonus: true 
+                        })
+                    });
+                    
+                    // Mise à jour immédiate pour l'affichage
+                    currentUser.balance = nouveauSolde;
+                    alert("Félicitations ! Vous avez reçu un bonus d'inscription de 1000 FC.");
+                }
 
                 if (currentUser) {
                     document.getElementById('walletBalance').innerText = (currentUser.balance || 0).toLocaleString() + " FC";
