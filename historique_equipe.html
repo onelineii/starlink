@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink - Historique Équipe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { margin: 0; background-color: #0f172a; color: #fff; padding-bottom: 30px; }
+
+        .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 3px solid #38bdf8; }
+        .header a { color: #38bdf8; text-decoration: none; }
+        
+        .container { padding: 20px; }
+
+        .team-investment-box {
+            background: #1e293b;
+            color: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            border: 1px solid #38bdf8;
+        }
+        .team-investment-box span { font-size: 13px; color: #94a3b8; text-transform: uppercase; }
+        .team-investment-box h2 { margin: 10px 0 0; font-size: 28px; font-weight: bold; color: #38bdf8; }
+
+        .tabs { display: flex; background: #1e293b; border-radius: 10px; padding: 5px; margin-bottom: 20px; border: 1px solid #38bdf8; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; font-weight: bold; font-size: 13px; color: #94a3b8; cursor: pointer; border-radius: 8px; }
+        .tab-btn.active { background: #38bdf8; color: #0f172a; }
+
+        .member-list { display: none; flex-direction: column; gap: 12px; }
+        .member-list.active { display: flex; }
+
+        .member-card {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #38bdf8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .member-avatar { background: #0f172a; color: #38bdf8; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #38bdf8; }
+        .member-details h4 { margin: 0 0 4px; font-size: 14px; }
+        .member-details p { margin: 0; font-size: 11px; color: #94a3b8; }
+        
+        .member-status { font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; }
+        .status-active { background: #064e3b; color: #34d399; }
+        .status-inactive { background: #7f1d1d; color: #f87171; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="equipe.html"><i class="fas fa-arrow-left"></i></a>
+        <h1 style="font-size: 18px; margin:0;">Historique de l'Équipe</h1>
+    </div>
+
+    <div class="container">
+        <div class="team-investment-box">
+            <span>Investissement Total Équipe</span>
+            <h2 id="totalTeamInvestment">0 FC</h2>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'lv1')">Lv 1</button>
+            <button class="tab-btn" onclick="switchTab(event, 'lv2')">Lv 2</button>
+            <button class="tab-btn" onclick="switchTab(event, 'lv3')">Lv 3</button>
+        </div>
+
+        <div id="lv1" class="member-list active"></div>
+        <div id="lv2" class="member-list"></div>
+        <div id="lv3" class="member-list"></div>
+    </div>
+
+    <script>
+        const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
+        const userPhone = localStorage.getItem('userPhone');
+        const myInviteCode = userPhone ? userPhone.slice(-6) : "";
+
+        function switchTab(e, id) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.member-list').forEach(l => l.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+        async function loadTeamHistory() {
+            try {
+                const [uRes, pRes] = await Promise.all([fetch(`${dbUrl}/users.json`), fetch(`${dbUrl}/purchases.json`)]);
+                const users = await uRes.json(), purchases = await pRes.json();
+                let total = 0, lv1C = [], lv2C = [];
+
+                const fill = (c, u, i) => {
+                    c.innerHTML += `<div class="member-card">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="member-avatar"><i class="fas fa-user"></i></div>
+                            <div class="member-details"><h4>${u.phone.replace(/(\d{3})\d{3}(\d{3})/, '$1xxx$2')}</h4><p>Investi: ${i.toLocaleString()} FC</p></div>
+                        </div>
+                        <div class="member-status ${i > 0 ? 'status-active' : 'status-inactive'}">${i > 0 ? 'VIP' : 'Inactif'}</div>
+                    </div>`;
+                };
+
+                for(let id in users) {
+                    let u = users[id], i = 0;
+                    if(purchases && purchases[u.phone]) Object.values(purchases[u.phone]).forEach(p => i += parseFloat(p.price || 0));
+                    
+                    if(u.referredBy === myInviteCode) { lv1C.push(u.phone.slice(-6)); total += i; fill(document.getElementById('lv1'), u, i); }
+                    else if(lv1C.includes(u.referredBy)) { lv2C.push(u.phone.slice(-6)); total += i; fill(document.getElementById('lv2'), u, i); }
+                    else if(lv2C.includes(u.referredBy)) { total += i; fill(document.getElementById('lv3'), u, i); }
+                }
+                document.getElementById('totalTeamInvestment').innerText = total.toLocaleString() + " FC";
+            } catch (e) { console.error(e); }
+        }
+        loadTeamHistory();
+    </script>
+</body>
+</html>
