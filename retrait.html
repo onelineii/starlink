@@ -20,11 +20,8 @@
 <div class="container">
     <h1 style="text-align:center; color: #38bdf8;">Starlink Retraits</h1>
 
-    <!-- FORMULAIRE RETRAIT -->
     <div class="box">
         <h2>Effectuer un retrait</h2>
-        
-        <!-- Affichage automatique de la carte liée -->
         <div id="infoCarte" style="background: #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #38bdf8;">
             <p style="font-size: 13px; text-align: center; margin: 0; color: #333;">Vérification de votre compte de réception...</p>
         </div>
@@ -35,7 +32,6 @@
         <button class="btn-retrait" onclick="soumettreRetrait()">Confirmer le Retrait</button>
     </div>
 
-    <!-- HISTORIQUE -->
     <div class="box">
         <h2>Historique des transactions</h2>
         <div id="historiqueList"></div>
@@ -44,9 +40,7 @@
 
 <script>
     const userPhone = localStorage.getItem('userPhone');
-    if (!userPhone) {
-        window.location.href = 'index.html';
-    }
+    if (!userPhone) window.location.href = 'index.html';
 
     const firebaseConfig = { databaseURL: "https://canal-e4274-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
@@ -54,14 +48,11 @@
 
     let carteLiee = null;
 
-    // 1. Vérifier si l'utilisateur a lié une carte
     db.ref('users/' + userPhone + '/carte').once('value').then((snapshot) => {
         if (!snapshot.exists()) {
-            // S'il n'y a pas de carte, on le force à aller la lier
             alert("Vous devez d'abord lier un compte Mobile Money pour retirer.");
             window.location.href = 'carte.html';
         } else {
-            // Si la carte existe, on l'affiche
             carteLiee = snapshot.val();
             document.getElementById('infoCarte').innerHTML = `
                 <div style="font-size: 13px; color: #000;">
@@ -79,33 +70,44 @@
     }
 
     function soumettreRetrait() {
-        const montant = document.getElementById('montantRet').value;
+        const montant = parseFloat(document.getElementById('montantRet').value);
         const hour = new Date().getHours();
 
-        if (montant < 5000) { alert("Le minimum est de 5 000 CDF"); return; }
+        if (isNaN(montant) || montant < 5000) { alert("Le minimum est de 5 000 CDF"); return; }
         if (hour < 9 || hour >= 17) { alert("Service fermé. Horaire: 09h à 17h."); return; }
         if (!carteLiee) { alert("Erreur: Carte non chargée."); return; }
 
-        const data = {
-            telephone_compte: userPhone,
-            reseau_reception: carteLiee.network,
-            numero_reception: carteLiee.numero,
-            nom_reception: carteLiee.nom,
-            type: "Retrait",
-            montant_brut: montant,
-            montant_net: montant * 0.85,
-            statut: "En attente",
-            date: new Date().toLocaleString()
-        };
+        // Vérification sécurisée du solde avant de valider
+        db.ref('users/' + userPhone + '/balance').once('value').then((snapshot) => {
+            const soldeActuel = parseFloat(snapshot.val() || 0);
 
-        // On enregistre le retrait sous le numéro de l'utilisateur
-        db.ref('retraits/' + userPhone).push(data).then(() => {
-            alert("Demande de retrait envoyée ! Délai 4-24h.");
-            location.reload();
+            if (soldeActuel < montant) {
+                alert("Solde insuffisant ! Votre solde est de " + soldeActuel.toLocaleString() + " CDF.");
+                return;
+            }
+
+            const data = {
+                telephone_compte: userPhone,
+                reseau_reception: carteLiee.network,
+                numero_reception: carteLiee.numero,
+                nom_reception: carteLiee.nom,
+                type: "Retrait",
+                montant_brut: montant,
+                montant_net: montant * 0.85,
+                statut: "En attente",
+                date: new Date().toLocaleString()
+            };
+
+            // Déduire le solde et enregistrer le retrait
+            db.ref('users/' + userPhone + '/balance').set(soldeActuel - montant).then(() => {
+                db.ref('retraits/' + userPhone).push(data).then(() => {
+                    alert("Demande de retrait envoyée !");
+                    location.reload();
+                });
+            });
         });
     }
 
-    // Chargement de l'historique de l'utilisateur connecté uniquement
     db.ref('retraits/' + userPhone).limitToLast(5).on('value', (snapshot) => {
         const container = document.getElementById('historiqueList');
         container.innerHTML = "";
