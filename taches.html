@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink - Centre des Tâches</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { margin: 0; background-color: #0f172a; color: #fff; padding-bottom: 30px; }
+
+        .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 3px solid #38bdf8; }
+        .header a { color: #38bdf8; text-decoration: none; }
+        
+        .container { padding: 20px; }
+
+        .points-banner { background: #1e293b; color: #fff; padding: 30px 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; border: 1px solid #38bdf8; }
+        .points-banner i { font-size: 40px; margin-bottom: 10px; color: #38bdf8; }
+        .points-banner h2 { margin: 5px 0; font-size: 24px; color: #38bdf8; }
+        .points-banner p { font-size: 12px; color: #94a3b8; }
+
+        .task-card { background: #1e293b; border-radius: 15px; padding: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #38bdf8; margin-bottom: 15px; }
+        .task-info h3 { margin: 0 0 5px; font-size: 15px; }
+        .task-info p { margin: 0; font-size: 12px; color: #94a3b8; }
+        .task-reward { font-weight: bold; color: #38bdf8; font-size: 14px; margin-top: 5px; display: block; }
+
+        .btn-claim { background: #38bdf8; color: #0f172a; border: none; padding: 10px 20px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-claim:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+        .btn-claim.done { background: #064e3b; color: #34d399; }
+
+        .instructions { margin-top: 30px; font-size: 12px; color: #94a3b8; padding: 15px; background: #1e293b; border-radius: 10px; line-height: 1.5; border-left: 3px solid #38bdf8; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+        <h1>Tâches Quotidiennes</h1>
+    </div>
+
+    <div class="container">
+        <div class="points-banner">
+            <i class="fas fa-satellite"></i>
+            <p>Solde actuel</p>
+            <h2 id="totalBonus">0 FC</h2>
+        </div>
+
+        <div class="task-card">
+            <div class="task-info">
+                <h3>Connexion Quotidienne</h3>
+                <p>Réclamez votre bonus de base.</p>
+                <span class="task-reward">+ 100 FC</span>
+            </div>
+            <button class="btn-claim" id="dailyBtn" onclick="claimBonus()">Vérification...</button>
+        </div>
+
+        <div class="task-card" style="opacity: 0.6;">
+            <div class="task-info">
+                <h3>Inviter un ami</h3>
+                <p>Bientôt disponible...</p>
+                <span class="task-reward">+ 500 FC</span>
+            </div>
+            <button class="btn-claim" disabled>Lier</button>
+        </div>
+
+        <div class="instructions">
+            <strong style="color: #38bdf8;">Règles Starlink :</strong><br>
+            • Bonus réclamable toutes les 24 heures.<br>
+            • Les fonds sont ajoutés directement à votre solde principal.<br>
+            • Maintenez votre activité quotidienne.
+        </div>
+    </div>
+
+    <script>
+        const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com/users";
+        const userPhone = localStorage.getItem('userPhone');
+
+        async function checkDailyStatus() {
+            try {
+                const res = await fetch(`${dbUrl}/${userPhone}.json`);
+                const u = await res.json();
+                if(u) {
+                    document.getElementById('totalBonus').innerText = (u.balance || 0).toLocaleString() + " FC";
+                    const btn = document.getElementById('dailyBtn');
+                    if (u.lastDailyClaim === new Date().toDateString()) {
+                        btn.innerText = "Récupéré ✓";
+                        btn.classList.add('done');
+                        btn.disabled = true;
+                    } else {
+                        btn.innerText = "Récupérer";
+                        btn.disabled = false;
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function claimBonus() {
+            const btn = document.getElementById('dailyBtn');
+            btn.disabled = true; btn.innerText = "Traitement...";
+            try {
+                const res = await fetch(`${dbUrl}/${userPhone}.json`);
+                const u = await res.json();
+                if (u.lastDailyClaim === new Date().toDateString()) return;
+                
+                await fetch(`${dbUrl}/${userPhone}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ balance: (u.balance || 0) + 100, lastDailyClaim: new Date().toDateString() })
+                });
+                checkDailyStatus();
+            } catch (e) { console.error(e); }
+        }
+        checkDailyStatus();
+    </script>
+</body>
+</html>
