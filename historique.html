@@ -58,7 +58,6 @@
     </div>
 
     <script>
-        // URL du projet Canal
         const mainBaseUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
         const userPhone = localStorage.getItem('userPhone');
 
@@ -70,26 +69,21 @@
         }
 
         async function fetchHistory() {
-            // Vérification de sécurité session
             if (!userPhone) {
-                alert("Session expirée, veuillez vous reconnecter.");
+                alert("Session expirée.");
                 window.location.href = "login.html";
                 return;
             }
 
             try {
-                // Fetch Recharges
-                const rRes = await fetch(`${mainBaseUrl}/recharges_en_attente.json`);
-                const recharges = await rRes.json();
-                renderList('recharges', recharges, false);
-
-                // Fetch Retraits
-                const tRes = await fetch(`${mainBaseUrl}/retraits.json`);
-                const retraits = await tRes.json();
-                renderList('retraits', retraits, true);
-            } catch (e) { 
-                console.error("Erreur de chargement", e); 
-            }
+                const [rRes, tRes] = await Promise.all([
+                    fetch(`${mainBaseUrl}/recharges_en_attente.json`),
+                    fetch(`${mainBaseUrl}/retraits.json`)
+                ]);
+                
+                renderList('recharges', await rRes.json(), false);
+                renderList('retraits', await tRes.json(), true);
+            } catch (e) { console.error("Erreur:", e); }
         }
 
         function renderList(containerId, data, isMinus) {
@@ -99,25 +93,33 @@
             let html = "";
             let found = false;
 
-            for (let id in data) {
-                let item = data[id];
-                // Filtrage par numéro utilisateur
-                if (item.userAccount === userPhone || item.user === userPhone) {
-                    found = true;
-                    let amount = item.amount || item.montant || 0;
-                    let status = (item.status || 'en_attente').toLowerCase().replace(' ', '_');
-                    
-                    html += `<div class="tx-card">
-                        <div class="tx-header">
-                            <span class="tx-amount ${isMinus ? 'minus' : ''}">${isMinus ? '-' : '+'} ${parseInt(amount).toLocaleString()} FC</span>
-                            <span class="tx-status status-${status}">${item.status || 'En attente'}</span>
-                        </div>
-                        <div class="tx-details">
-                            Réseau: ${item.network || 'Mobile Money'}<br>
-                            ID: ${item.transactionID || item.transId || 'N/A'}
-                        </div>
-                        <div class="tx-date">${item.date || ''}</div>
-                    </div>`;
+            const addCard = (item) => {
+                found = true;
+                let amount = item.amount || item.montant || 0;
+                let status = (item.status || 'en_attente').toLowerCase().replace(' ', '_');
+                
+                html += `<div class="tx-card">
+                    <div class="tx-header">
+                        <span class="tx-amount ${isMinus ? 'minus' : ''}">${isMinus ? '-' : '+'} ${parseInt(amount).toLocaleString()} FC</span>
+                        <span class="tx-status status-${status}">${item.status || 'En attente'}</span>
+                    </div>
+                    <div class="tx-details">
+                        Réseau: ${item.network || 'Mobile Money'}<br>
+                        ID: ${item.transactionID || item.transId || 'N/A'}
+                    </div>
+                    <div class="tx-date">${item.date || ''}</div>
+                </div>`;
+            };
+
+            for (let key in data) {
+                let entry = data[key];
+                // Si la structure est : /retraits/userPhone/id_transaction
+                if (key === userPhone && typeof entry === 'object') {
+                    for (let subKey in entry) { addCard(entry[subKey]); }
+                } 
+                // Si la structure est : /retraits/id_transaction (avec champ utilisateur dedans)
+                else if (typeof entry === 'object' && (entry.userAccount === userPhone || entry.user === userPhone || entry.phone === userPhone)) {
+                    addCard(entry);
                 }
             }
             if (found) container.innerHTML = html;
