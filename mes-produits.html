@@ -14,17 +14,15 @@
         .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
 
         .container { padding: 20px; }
-
         #emptyState { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
         .empty-icon { width: 100px; height: 100px; background: #1e293b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #38bdf8; margin-bottom: 20px; border: 2px dashed #38bdf8; }
-        
         .btn-shop { background: #38bdf8; color: #0f172a; text-decoration: none; padding: 15px 40px; border-radius: 30px; font-weight: bold; }
 
         #productsGrid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .product-card { background: #1e293b; border-radius: 15px; border: 1px solid #38bdf8; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
         
         .product-top { display: flex; align-items: center; gap: 15px; }
-        .product-img-box { width: 75px; height: 75px; background: #0f172a; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #38bdf8; color: #38bdf8; }
+        .product-img { width: 75px; height: 75px; object-fit: cover; border-radius: 12px; border: 1px solid #38bdf8; }
         
         .product-details h3 { margin: 0 0 5px; font-size: 16px; }
         .badge-active { background: #0f172a; color: #38bdf8; font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 1px solid #38bdf8; }
@@ -32,14 +30,6 @@
         .product-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #0f172a; padding: 10px; border-radius: 8px; font-size: 12px; }
         .product-stats div span { display: block; color: #94a3b8; font-size: 11px; margin-bottom: 2px; }
         .product-stats div strong { color: #fff; font-size: 14px; }
-
-        .progress-container { background: #0f172a; border-radius: 10px; height: 6px; width: 100%; border: 1px solid #38bdf8; }
-        .progress-bar { background: #38bdf8; height: 100%; width: 100%; }
-
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #1e293b; display: flex; justify-content: space-around; padding: 12px 0; border-top: 2px solid #38bdf8; }
-        .nav-item { text-decoration: none; color: #94a3b8; text-align: center; font-size: 11px; }
-        .nav-item.active { color: #38bdf8; font-weight: bold; }
-        .nav-icon { font-size: 20px; display: block; margin-bottom: 3px; }
     </style>
 </head>
 <body>
@@ -59,18 +49,9 @@
         </div>
     </div>
 
-    <nav class="bottom-nav">
-        <a href="dashboard.html" class="nav-item"><i class="fas fa-home nav-icon"></i>Accueil</a>
-        <a href="produit.html" class="nav-item active"><i class="fas fa-box nav-icon"></i>Plans</a>
-        <a href="equipe.html" class="nav-item"><i class="fas fa-users nav-icon"></i>Équipe</a>
-        <a href="profil.html" class="nav-item"><i class="fas fa-user nav-icon"></i>Moi</a>
-    </nav>
-
     <script>
         const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
         const userPhone = localStorage.getItem('userPhone');
-
-        if (!userPhone) window.location.href = 'index.html';
 
         async function loadMyProducts() {
             const grid = document.getElementById('productsGrid');
@@ -84,20 +65,30 @@
                 } else {
                     for (let pId in purchases) {
                         const item = purchases[pId];
+                        
+                        // Calcul des jours écoulés
+                        const purchaseDate = new Date(item.purchaseDate);
+                        const now = new Date();
+                        const diffTime = Math.abs(now - purchaseDate);
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        // Limiter à 90 jours
+                        const days = Math.min(diffDays, 90);
+                        const earned = days * (item.dailyIncome || 0);
+
                         grid.innerHTML += `
                             <div class="product-card">
                                 <div class="product-top">
-                                    <div class="product-img-box"><i class="fas fa-satellite"></i></div>
+                                    <img src="IMG_6038.jpeg" class="product-img">
                                     <div class="product-details">
                                         <h3>${item.name}</h3>
-                                        <span class="badge-active">En cours de location</span>
+                                        <span class="badge-active">Jour ${days}/90</span>
                                     </div>
                                 </div>
                                 <div class="product-stats">
-                                    <div><span>Capital</span><strong>${(item.price || 0).toLocaleString()} FC</strong></div>
+                                    <div><span>Gains totaux</span><strong>${earned.toLocaleString()} FC</strong></div>
                                     <div><span>Revenu/j</span><strong>${(item.dailyIncome || 0).toLocaleString()} FC</strong></div>
                                 </div>
-                                <div class="progress-container"><div class="progress-bar"></div></div>
                             </div>
                         `;
                     }
