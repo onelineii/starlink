@@ -2,163 +2,65 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Starlink - Historique Équipe</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-        body { margin: 0; background-color: #0f172a; color: #fff; padding-bottom: 30px; }
-
-        .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 3px solid #38bdf8; }
-        .header a { color: #38bdf8; text-decoration: none; }
-        
-        .container { padding: 20px; }
-
-        .team-investment-box {
-            background: #1e293b;
-            color: #fff;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 25px;
-            border: 1px solid #38bdf8;
-        }
-        .team-investment-box span { font-size: 13px; color: #94a3b8; text-transform: uppercase; }
-        .team-investment-box h2 { margin: 10px 0 0; font-size: 28px; font-weight: bold; color: #38bdf8; }
-
-        .tabs { display: flex; background: #1e293b; border-radius: 10px; padding: 5px; margin-bottom: 20px; border: 1px solid #38bdf8; }
-        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; font-weight: bold; font-size: 13px; color: #94a3b8; cursor: pointer; border-radius: 8px; }
-        .tab-btn.active { background: #38bdf8; color: #0f172a; }
-
-        .member-list { display: none; flex-direction: column; gap: 12px; }
-        .member-list.active { display: flex; }
-
-        .member-card {
-            background: #1e293b;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #38bdf8;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .member-avatar { background: #0f172a; color: #38bdf8; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #38bdf8; }
-        .member-details h4 { margin: 0 0 4px; font-size: 14px; }
-        .member-details p { margin: 0; font-size: 11px; color: #94a3b8; }
-        
-        .member-status { font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; }
-        .status-active { background: #064e3b; color: #34d399; }
-        .status-inactive { background: #7f1d1d; color: #f87171; }
-    </style>
+    <title>Mon Équipe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-900 text-white p-4">
 
-    <div class="header">
-        <a href="equipe.html"><i class="fas fa-arrow-left"></i></a>
-        <h1 style="font-size: 18px; margin:0;">Historique de l'Équipe</h1>
-    </div>
-
-    <div class="container">
-        <div class="team-investment-box">
-            <span>Investissement Total Équipe</span>
-            <h2 id="totalTeamInvestment">0 FC</h2>
+    <h2 class="text-xl font-bold mb-4 text-sky-400 uppercase italic">Mon Équipe</h2>
+    <div id="equipe-container" class="space-y-3">
         </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab(event, 'lv1')">Lv 1</button>
-            <button class="tab-btn" onclick="switchTab(event, 'lv2')">Lv 2</button>
-            <button class="tab-btn" onclick="switchTab(event, 'lv3')">Lv 3</button>
+    <div id="detailsModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4">
+        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-sm border border-sky-500">
+            <h3 id="modalTitle" class="text-lg font-bold text-white mb-4">Détails</h3>
+            <p id="modalBody" class="text-slate-300 text-sm mb-6"></p>
+            <button onclick="document.getElementById('detailsModal').classList.add('hidden')" class="w-full bg-sky-600 py-2 rounded-lg font-bold">Fermer</button>
         </div>
-
-        <div id="lv1" class="member-list active"></div>
-        <div id="lv2" class="member-list"></div>
-        <div id="lv3" class="member-list"></div>
     </div>
 
     <script>
-        const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
+        const mainBaseUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
         const userPhone = localStorage.getItem('userPhone');
 
-        function switchTab(e, id) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.member-list').forEach(l => l.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            document.getElementById(id).classList.add('active');
-        }
+        async function fetchEquipe() {
+            const container = document.getElementById('equipe-container');
+            container.innerHTML = "<p class='text-center'>Chargement...</p>";
 
-        async function loadTeamHistory() {
             try {
-                const [uRes, pRes] = await Promise.all([
-                    fetch(`${dbUrl}/users.json`),
-                    fetch(`${dbUrl}/purchases.json`)
-                ]);
-                const users = await uRes.json();
-                const purchases = await pRes.json();
-                
-                if (!users) return;
+                const res = await fetch(`${mainBaseUrl}/users.json`);
+                const allUsers = await res.json();
+                let html = "";
+                let found = false;
 
-                let total = 0;
-                let lv1List = [];
-                let lv2List = [];
-
-                const fill = (containerId, phone, investment) => {
-                    document.getElementById(containerId).innerHTML += `
-                        <div class="member-card">
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <div class="member-avatar"><i class="fas fa-user"></i></div>
-                                <div class="member-details">
-                                    <h4>${phone}</h4>
-                                    <p>Investi: ${investment.toLocaleString()} FC</p>
-                                </div>
+                for (let phone in allUsers) {
+                    let user = allUsers[phone];
+                    
+                    // On vérifie si le parrain est bien l'utilisateur connecté
+                    if (user.referredBy === userPhone) {
+                        found = true;
+                        html += `
+                            <div onclick="showDetails('${phone}', ${user.balance || 0})" 
+                                 class="bg-slate-800 p-4 rounded-lg border-l-4 border-sky-500 cursor-pointer hover:bg-slate-700 transition">
+                                <p class="font-bold text-lg">${phone}</p>
+                                <p class="text-xs text-sky-400 uppercase">Cliquez pour voir le solde</p>
                             </div>
-                            <div class="member-status ${investment > 0 ? 'status-active' : 'status-inactive'}">
-                                ${investment > 0 ? 'VIP' : 'Inactif'}
-                            </div>
-                        </div>`;
-                };
-
-                // 1. Identification Lv1 (ceux parrainés directement par l'utilisateur connecté)
-                for (let phone in users) {
-                    if (users[phone].referredBy === userPhone) {
-                        let inv = 0;
-                        if (purchases && purchases[phone]) {
-                            Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
-                        }
-                        lv1List.push(phone);
-                        total += inv;
-                        fill('lv1', phone, inv);
+                        `;
                     }
                 }
-
-                // 2. Identification Lv2 (parrainés par un Lv1)
-                for (let phone in users) {
-                    if (lv1List.includes(users[phone].referredBy)) {
-                        let inv = 0;
-                        if (purchases && purchases[phone]) {
-                            Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
-                        }
-                        lv2List.push(phone);
-                        total += inv;
-                        fill('lv2', phone, inv);
-                    }
-                }
-
-                // 3. Identification Lv3 (parrainés par un Lv2)
-                for (let phone in users) {
-                    if (lv2List.includes(users[phone].referredBy)) {
-                        let inv = 0;
-                        if (purchases && purchases[phone]) {
-                            Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
-                        }
-                        total += inv;
-                        fill('lv3', phone, inv);
-                    }
-                }
-
-                document.getElementById('totalTeamInvestment').innerText = total.toLocaleString() + " FC";
-            } catch (e) { console.error("Erreur historique:", e); }
+                container.innerHTML = found ? html : "<p class='text-center text-slate-500'>Aucun filleul pour le moment.</p>";
+            } catch (e) {
+                container.innerHTML = "<p class='text-red-500'>Erreur de chargement.</p>";
+            }
         }
-        loadTeamHistory();
+
+        function showDetails(phone, balance) {
+            document.getElementById('modalTitle').innerText = "Membre : " + phone;
+            document.getElementById('modalBody').innerText = "Solde actuel du membre : " + balance.toLocaleString() + " FC";
+            document.getElementById('detailsModal').classList.remove('hidden');
+        }
+
+        fetchEquipe();
     </script>
 </body>
 </html>
