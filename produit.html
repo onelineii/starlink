@@ -166,19 +166,16 @@
                 const currentUser = await response.json();
                 
                 if (currentUser && (currentUser.balance >= price)) {
-                    // Déduire le solde et marquer comme achat effectué
                     await fetch(`${dbUrl}/${userPhone}.json`, {
                         method: 'PATCH',
                         body: JSON.stringify({ balance: currentUser.balance - price, hasPurchased: true })
                     });
                     
-                    // Enregistrer l'achat
                     await fetch(`${mainBaseUrl}/purchases/${userPhone}.json`, {
                         method: 'POST',
                         body: JSON.stringify({ name, price, dailyIncome: daily, purchaseDate: new Date().toISOString() })
                     });
 
-                    // LOGIQUE DE DISTRIBUTION DES COMMISSIONS
                     if (currentUser.referredBy) {
                         const allUsersRes = await fetch(`${dbUrl}.json`);
                         const allUsers = await allUsersRes.json();
@@ -189,7 +186,7 @@
                             await fetch(`${dbUrl}/${parrainLv1.phone}.json`, {
                                 method: 'PATCH',
                                 body: JSON.stringify({ 
-                                    rewardFromUser: (parseFloat(parrainLv1.rewardFromUser || 0) + comLv1),
+                                    gainParrainageLv1: (parseFloat(parrainLv1.gainParrainageLv1 || 0) + comLv1),
                                     balance: (parseFloat(parrainLv1.balance || 0) + comLv1)
                                 })
                             });
@@ -201,7 +198,7 @@
                                     await fetch(`${dbUrl}/${parrainLv2.phone}.json`, {
                                         method: 'PATCH',
                                         body: JSON.stringify({ 
-                                            commissionLv2: (parseFloat(parrainLv2.commissionLv2 || 0) + comLv2),
+                                            gainParrainageLv2: (parseFloat(parrainLv2.gainParrainageLv2 || 0) + comLv2),
                                             balance: (parseFloat(parrainLv2.balance || 0) + comLv2)
                                         })
                                     });
@@ -213,7 +210,7 @@
                                             await fetch(`${dbUrl}/${parrainLv3.phone}.json`, {
                                                 method: 'PATCH',
                                                 body: JSON.stringify({ 
-                                                    commissionLv3: (parseFloat(parrainLv3.commissionLv3 || 0) + comLv3),
+                                                    gainParrainageLv3: (parseFloat(parrainLv3.gainParrainageLv3 || 0) + comLv3),
                                                     balance: (parseFloat(parrainLv3.balance || 0) + comLv3)
                                                 })
                                             });
