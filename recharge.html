@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink - Recharge CDF</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        body { background-color: #0f172a; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .hidden { display: none; }
+        .container { max-width: 500px; margin: auto; }
+        .amount-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .amount-btn { background: #1e293b; border: 1px solid #38bdf8; color: #fff; padding: 15px; border-radius: 8px; cursor: pointer; }
+        .channel-option { background: #1e293b; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #38bdf8; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .payment-box { background: #fff; color: #000; padding: 20px; border-radius: 15px; }
+        .dial-btn { width: 100%; padding: 15px; background: #38bdf8; color: #fff; border: none; border-radius: 8px; font-weight: bold; margin: 15px 0; cursor: pointer; }
+        .id-input { width: 100%; padding: 15px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; }
+        .instructions-box { border: 1px solid #ffccc7; padding: 15px; border-radius: 8px; background: #fff5f5; font-size: 13px; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="page1">
+        <h2>Recharger (CDF)</h2>
+        <div class="amount-grid">
+            <button class="amount-btn" onclick="showPayment('15 000')">15 000 CDF</button>
+            <button class="amount-btn" onclick="showPayment('30 000')">30 000 CDF</button>
+            <button class="amount-btn" onclick="showPayment('60 000')">60 000 CDF</button>
+            <button class="amount-btn" onclick="showPayment('120 000')">120 000 CDF</button>
+            <button class="amount-btn" onclick="showPayment('250 000')">250 000 CDF</button>
+            <button class="amount-btn" onclick="showPayment('450 000')">450 000 CDF</button>
+            <button class="amount-btn" onclick="showPayment('1 000 000')">1 000 000 CDF</button>
+            <button class="amount-btn" onclick="showPayment('2 000 000')">2 000 000 CDF</button>
+        </div>
+        
+        <label class="channel-option">
+            <input type="radio" name="c" value="Airtel" data-num="0984083514" data-ussd="*501# > Sélectionner Franc Congolais > Entrer le numéro" checked> Airtel Money
+        </label>
+        <label class="channel-option">
+            <input type="radio" name="c" value="Orange" data-num="0802667704" data-ussd="*144# > Sélectionner Franc Congolais > Entrer le numéro"> Orange Money
+        </label>
+        <label class="channel-option">
+            <input type="radio" name="c" value="Vodacom" data-num="0813944647" data-ussd="*1122# > Sélectionner Franc Congolais > Entrer le numéro"> Vodacom M-Pesa
+        </label>
+    </div>
+
+    <div id="page2" class="hidden payment-box">
+        <h1 id="amtDisplay"></h1>
+        <p>Dépôt via <strong id="bankName">...</strong></p>
+        <button class="dial-btn" id="dialBtn"><i class="fas fa-phone"></i> CADRAN <span id="ussdCode"></span></button>
+        <p>Numéro bénéficiaire: <strong id="beneficiaryNum">...</strong></p>
+        <input type="text" id="transId" placeholder="Entrez le numéro de transaction (Trans.ID)" class="id-input">
+        <button class="dial-btn" style="background:#28a745;" onclick="submitRecharge()">Soumettre maintenant</button>
+        
+        <div class="instructions-box">
+            <h3>Processus d'envoi (CDF)</h3>
+            <ol id="instrList"></ol>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = { databaseURL: "https://canal-e4274-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function showPayment(amount) {
+        const sel = document.querySelector('input[name="c"]:checked');
+        document.getElementById('amtDisplay').innerText = amount + " CDF";
+        document.getElementById('bankName').innerText = sel.value;
+        document.getElementById('beneficiaryNum').innerText = sel.getAttribute('data-num');
+        
+        const ussdFull = sel.getAttribute('data-ussd');
+        const ussdCode = ussdFull.split(' > ')[0];
+        document.getElementById('ussdCode').innerText = ussdCode;
+
+        const steps = ussdFull.split(' > ');
+        const instrList = document.getElementById('instrList');
+        instrList.innerHTML = `<li>Composez le <strong>${steps[0]}</strong></li>
+                               <li>Suivez les étapes : <strong>${steps.slice(1).join(' → ')}</strong></li>
+                               <li>Montant à saisir : <strong>${amount} CDF</strong></li>
+                               <li>Numéro à copier : <strong>${sel.getAttribute('data-num')}</strong></li>`;
+
+        document.getElementById('page1').classList.add('hidden');
+        document.getElementById('page2').classList.remove('hidden');
+    }
+
+    function submitRecharge() {
+        const transId = document.getElementById('transId').value;
+        if (!transId) { alert("Veuillez entrer l'ID de transaction."); return; }
+
+        const data = {
+            montant: document.getElementById('amtDisplay').innerText,
+            banque: document.getElementById('bankName').innerText,
+            id_transaction: transId,
+            date: new Date().toLocaleString(),
+            statut: "En attente"
+        };
+        
+        db.ref('recharges/').push(data).then(() => {
+            alert("Succès ! Votre demande est envoyée.");
+            window.location.reload();
+        });
+    }
+</script>
+</body>
+</html>
