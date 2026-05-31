@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink - Mes Investissements</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { margin: 0; background-color: #0f172a; color: #fff; padding-bottom: 90px; }
+
+        .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 3px solid #38bdf8; }
+        .header a { color: #38bdf8; text-decoration: none; font-size: 20px; }
+        .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .container { padding: 20px; }
+
+        #emptyState { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
+        .empty-icon { width: 100px; height: 100px; background: #1e293b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #38bdf8; margin-bottom: 20px; border: 2px dashed #38bdf8; }
+        
+        .btn-shop { background: #38bdf8; color: #0f172a; text-decoration: none; padding: 15px 40px; border-radius: 30px; font-weight: bold; }
+
+        #productsGrid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .product-card { background: #1e293b; border-radius: 15px; border: 1px solid #38bdf8; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .product-top { display: flex; align-items: center; gap: 15px; }
+        .product-img-box { width: 75px; height: 75px; background: #0f172a; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #38bdf8; color: #38bdf8; }
+        
+        .product-details h3 { margin: 0 0 5px; font-size: 16px; }
+        .badge-active { background: #0f172a; color: #38bdf8; font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 1px solid #38bdf8; }
+
+        .product-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #0f172a; padding: 10px; border-radius: 8px; font-size: 12px; }
+        .product-stats div span { display: block; color: #94a3b8; font-size: 11px; margin-bottom: 2px; }
+        .product-stats div strong { color: #fff; font-size: 14px; }
+
+        .progress-container { background: #0f172a; border-radius: 10px; height: 6px; width: 100%; border: 1px solid #38bdf8; }
+        .progress-bar { background: #38bdf8; height: 100%; width: 100%; }
+
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #1e293b; display: flex; justify-content: space-around; padding: 12px 0; border-top: 2px solid #38bdf8; }
+        .nav-item { text-decoration: none; color: #94a3b8; text-align: center; font-size: 11px; }
+        .nav-item.active { color: #38bdf8; font-weight: bold; }
+        .nav-icon { font-size: 20px; display: block; margin-bottom: 3px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="profil.html"><i class="fas fa-arrow-left"></i></a>
+        <h1>Mes Investissements</h1>
+    </div>
+
+    <div class="container">
+        <div id="productsGrid"></div>
+        <div id="emptyState">
+            <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+            <h2>Aucun produit actif</h2>
+            <p>Activez un plan pour commencer.</p>
+            <a href="produit.html" class="btn-shop">Explorer les plans</a>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-home nav-icon"></i>Accueil</a>
+        <a href="produit.html" class="nav-item active"><i class="fas fa-box nav-icon"></i>Plans</a>
+        <a href="equipe.html" class="nav-item"><i class="fas fa-users nav-icon"></i>Équipe</a>
+        <a href="profil.html" class="nav-item"><i class="fas fa-user nav-icon"></i>Moi</a>
+    </nav>
+
+    <script>
+        const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
+        const userPhone = localStorage.getItem('userPhone');
+
+        if (!userPhone) window.location.href = 'index.html';
+
+        async function loadMyProducts() {
+            const grid = document.getElementById('productsGrid');
+            const empty = document.getElementById('emptyState');
+            try {
+                const res = await fetch(`${dbUrl}/purchases/${userPhone}.json`);
+                const purchases = await res.json();
+
+                if (!purchases || Object.keys(purchases).length === 0) {
+                    empty.style.display = "flex";
+                } else {
+                    for (let pId in purchases) {
+                        const item = purchases[pId];
+                        grid.innerHTML += `
+                            <div class="product-card">
+                                <div class="product-top">
+                                    <div class="product-img-box"><i class="fas fa-satellite"></i></div>
+                                    <div class="product-details">
+                                        <h3>${item.name}</h3>
+                                        <span class="badge-active">En cours de location</span>
+                                    </div>
+                                </div>
+                                <div class="product-stats">
+                                    <div><span>Capital</span><strong>${(item.price || 0).toLocaleString()} FC</strong></div>
+                                    <div><span>Revenu/j</span><strong>${(item.dailyEarnings || 0).toLocaleString()} FC</strong></div>
+                                </div>
+                                <div class="progress-container"><div class="progress-bar"></div></div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }
+        loadMyProducts();
+    </script>
+</body>
+</html>
