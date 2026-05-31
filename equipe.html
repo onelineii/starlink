@@ -191,18 +191,16 @@
 
                 const userList = Object.keys(users).map(key => ({ ...users[key], phone: key }));
                 
-                // Niveau 1
-                const lv1 = userList.filter(u => u.referredBy === myInviteCode);
+                // Filtrage utilisant .slice(-6) sur le referredBy pour être sûr de la correspondance
+                const lv1 = userList.filter(u => u.referredBy && String(u.referredBy).slice(-6) === myInviteCode);
                 const g1 = lv1.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv1 || 0), 0);
 
-                // Niveau 2
                 const lv1Codes = lv1.map(u => u.phone.slice(-6));
-                const lv2 = userList.filter(u => lv1Codes.includes(u.referredBy));
+                const lv2 = userList.filter(u => u.referredBy && lv1Codes.includes(String(u.referredBy).slice(-6)));
                 const g2 = lv2.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv2 || 0), 0);
 
-                // Niveau 3
                 const lv2Codes = lv2.map(u => u.phone.slice(-6));
-                const lv3 = userList.filter(u => lv2Codes.includes(u.referredBy));
+                const lv3 = userList.filter(u => u.referredBy && lv2Codes.includes(String(u.referredBy).slice(-6)));
                 const g3 = lv3.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv3 || 0), 0);
 
                 document.getElementById('countLv1').innerText = lv1.length;
