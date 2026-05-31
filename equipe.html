@@ -189,30 +189,21 @@
                 const users = await response.json();
                 if (!users) return;
 
-                let lv1 = [], lv2 = [], lv3 = [];
-                let g1 = 0, g2 = 0, g3 = 0;
+                const userList = Object.values(users);
+                
+                // Niveau 1
+                const lv1 = userList.filter(u => u.referredBy === myInviteCode);
+                const g1 = lv1.reduce((acc, u) => acc + parseFloat(u.rewardFromUser || 0), 0);
 
-                for (let id in users) {
-                    let u = users[id];
-                    if (u.referredBy === myInviteCode) {
-                        lv1.push(u.phone.slice(-6));
-                        g1 += parseFloat(u.rewardFromUser || 0);
-                    }
-                }
-                for (let id in users) {
-                    let u = users[id];
-                    if (lv1.includes(u.referredBy)) {
-                        lv2.push(u.phone.slice(-6));
-                        g2 += parseFloat(u.commissionLv2 || 0);
-                    }
-                }
-                for (let id in users) {
-                    let u = users[id];
-                    if (lv2.includes(u.referredBy)) {
-                        lv3.push(u.phone.slice(-6));
-                        g3 += parseFloat(u.commissionLv3 || 0);
-                    }
-                }
+                // Niveau 2
+                const lv1Codes = lv1.map(u => u.phone.slice(-6));
+                const lv2 = userList.filter(u => lv1Codes.includes(u.referredBy));
+                const g2 = lv2.reduce((acc, u) => acc + parseFloat(u.commissionLv2 || 0), 0);
+
+                // Niveau 3
+                const lv2Codes = lv2.map(u => u.phone.slice(-6));
+                const lv3 = userList.filter(u => lv2Codes.includes(u.referredBy));
+                const g3 = lv3.reduce((acc, u) => acc + parseFloat(u.commissionLv3 || 0), 0);
 
                 document.getElementById('countLv1').innerText = lv1.length;
                 document.getElementById('rewardLv1').innerText = g1.toLocaleString() + " FC";
