@@ -139,27 +139,31 @@
     </nav>
 
     <script>
-        const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com/users";
+        const mainBaseUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
         const userPhone = localStorage.getItem('userPhone');
 
         if (!userPhone) { window.location.href = 'index.html'; }
 
         async function fetchUserData() {
             try {
-                const response = await fetch(`${dbUrl}.json`);
-                const users = await response.json();
-                for (let id in users) {
-                    if (users[id].phone === userPhone) {
-                        document.getElementById('userBalance').innerText = (users[id].balance || 0).toLocaleString() + " FC";
-                        document.getElementById('userEarnings').innerText = (users[id].earnings || 0).toLocaleString() + " FC";
-                        break;
-                    }
+                // Requête directe vers l'utilisateur connecté (comme sur la page Profil)
+                const response = await fetch(`${mainBaseUrl}/users/${userPhone}.json`);
+                const currentUser = await response.json();
+
+                if (currentUser) {
+                    // Utilisation de Number() pour forcer le bon format
+                    let soldeAAfficher = Number(currentUser.balance || 0);
+                    
+                    document.getElementById('userBalance').innerText = soldeAAfficher.toLocaleString() + " FC";
+                    document.getElementById('userEarnings').innerText = Number(currentUser.earnings || 0).toLocaleString() + " FC";
                 }
-            } catch (e) { console.error("Erreur chargement"); }
+            } catch (e) { 
+                console.error("Erreur chargement des données :", e); 
+            }
         }
 
         function updateTicker() {
-            const randAmt = ["15,000", "45,000", "120,000"];
+            const randAmt = ["15 000", "45 000", "120 000"];
             document.getElementById('tickerText').innerText = `Un nouvel utilisateur vient de retirer ${randAmt[Math.floor(Math.random()*randAmt.length)]} FC sur Starlink...`;
         }
 
