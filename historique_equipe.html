@@ -78,7 +78,6 @@
     <script>
         const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
         const userPhone = localStorage.getItem('userPhone');
-        const myInviteCode = userPhone ? userPhone.slice(-6) : "";
 
         function switchTab(e, id) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -99,8 +98,8 @@
                 if (!users) return;
 
                 let total = 0;
-                let lv1Codes = [];
-                let lv2Codes = [];
+                let lv1Phones = [];
+                let lv2Phones = [];
 
                 const fill = (containerId, phone, investment) => {
                     document.getElementById(containerId).innerHTML += `
@@ -118,7 +117,7 @@
                         </div>`;
                 };
 
-                // 1. Identification Lv1 et Calculs
+                // 1. Identification Lv1 : ceux dont le "referredBy" est le numéro complet de l'utilisateur actuel
                 for (let phone in users) {
                     let u = users[phone];
                     let inv = 0;
@@ -126,14 +125,14 @@
                         Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
                     }
 
-                    if (u.referredBy === myInviteCode) {
-                        lv1Codes.push(phone.slice(-6));
+                    if (u.referredBy === userPhone) {
+                        lv1Phones.push(phone); // On stocke le numéro complet
                         total += inv;
                         fill('lv1', phone, inv);
                     }
                 }
 
-                // 2. Identification Lv2
+                // 2. Identification Lv2 : ceux dont le parrain est un membre de la liste lv1Phones
                 for (let phone in users) {
                     let u = users[phone];
                     let inv = 0;
@@ -141,14 +140,14 @@
                         Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
                     }
 
-                    if (lv1Codes.includes(u.referredBy)) {
-                        lv2Codes.push(phone.slice(-6));
+                    if (lv1Phones.includes(u.referredBy)) {
+                        lv2Phones.push(phone);
                         total += inv;
                         fill('lv2', phone, inv);
                     }
                 }
 
-                // 3. Identification Lv3
+                // 3. Identification Lv3 : ceux dont le parrain est un membre de la liste lv2Phones
                 for (let phone in users) {
                     let u = users[phone];
                     let inv = 0;
@@ -156,7 +155,7 @@
                         Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
                     }
 
-                    if (lv2Codes.includes(u.referredBy)) {
+                    if (lv2Phones.includes(u.referredBy)) {
                         total += inv;
                         fill('lv3', phone, inv);
                     }
