@@ -189,21 +189,21 @@
                 const users = await response.json();
                 if (!users) return;
 
-                const userList = Object.values(users);
+                const userList = Object.keys(users).map(key => ({ ...users[key], phone: key }));
                 
                 // Niveau 1
                 const lv1 = userList.filter(u => u.referredBy === myInviteCode);
-                const g1 = lv1.reduce((acc, u) => acc + parseFloat(u.rewardFromUser || 0), 0);
+                const g1 = lv1.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv1 || 0), 0);
 
                 // Niveau 2
                 const lv1Codes = lv1.map(u => u.phone.slice(-6));
                 const lv2 = userList.filter(u => lv1Codes.includes(u.referredBy));
-                const g2 = lv2.reduce((acc, u) => acc + parseFloat(u.commissionLv2 || 0), 0);
+                const g2 = lv2.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv2 || 0), 0);
 
                 // Niveau 3
                 const lv2Codes = lv2.map(u => u.phone.slice(-6));
                 const lv3 = userList.filter(u => lv2Codes.includes(u.referredBy));
-                const g3 = lv3.reduce((acc, u) => acc + parseFloat(u.commissionLv3 || 0), 0);
+                const g3 = lv3.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv3 || 0), 0);
 
                 document.getElementById('countLv1').innerText = lv1.length;
                 document.getElementById('rewardLv1').innerText = g1.toLocaleString() + " FC";
