@@ -169,32 +169,48 @@
                 const response = await fetch(`${dbUrl}/${userPhone}.json`);
                 let currentUser = await response.json();
 
-                // Logique du bonus d'inscription de 1000 FC
-                if (currentUser && !currentUser.hasBonus) {
-                    const nouveauSolde = (currentUser.balance || 0) + 1000;
+                // 1. Si l'utilisateur n'existe pas encore dans la base (1ère visite absolue)
+                if (!currentUser) {
+                    currentUser = { balance: 1000, earnings: 0, hasBonus: true };
+                    await fetch(`${dbUrl}/${userPhone}.json`, {
+                        method: 'PUT',
+                        body: JSON.stringify(currentUser)
+                    });
+                } 
+                // 2. Si l'utilisateur existe mais n'a pas la mention "hasBonus"
+                else if (!currentUser.hasBonus) {
+                    // Utilisation stricte de Number() pour forcer le calcul mathématique
+                    currentUser.balance = Number(currentUser.balance || 0) + 1000;
+                    currentUser.hasBonus = true;
                     
                     await fetch(`${dbUrl}/${userPhone}.json`, {
                         method: 'PATCH',
                         body: JSON.stringify({ 
-                            balance: nouveauSolde, 
+                            balance: currentUser.balance, 
                             hasBonus: true 
                         })
                     });
-                    
-                    // Mise à jour immédiate pour l'affichage
-                    currentUser.balance = nouveauSolde;
-                    alert("Félicitations ! Vous avez reçu un bonus d'inscription de 1000 FC.");
                 }
 
-                if (currentUser) {
-                    document.getElementById('walletBalance').innerText = (currentUser.balance || 0).toLocaleString() + " FC";
-                    document.getElementById('walletEarnings').innerText = (currentUser.earnings || 0).toLocaleString() + " FC";
-                    
-                    const prodRes = await fetch(`${mainBaseUrl}/purchases/${userPhone}.json`);
-                    const products = await prodRes.json();
-                    document.getElementById('displayVIP').innerText = "VIP " + (products ? Object.keys(products).length : 0);
+                // 3. Mise à jour de l'interface (avec Number() pour sécuriser l'affichage)
+                let soldeAAfficher = Number(currentUser.balance || 0);
+                
+                // Sécurité au cas où la page Dashboard utilise le mot "solde" au lieu de "balance"
+                if (currentUser.balance === undefined && currentUser.solde !== undefined) {
+                    soldeAAfficher = Number(currentUser.solde);
                 }
-            } catch (error) { console.error(error); }
+
+                document.getElementById('walletBalance').innerText = soldeAAfficher.toLocaleString() + " FC";
+                document.getElementById('walletEarnings').innerText = Number(currentUser.earnings || 0).toLocaleString() + " FC";
+                
+                // VIP
+                const prodRes = await fetch(`${mainBaseUrl}/purchases/${userPhone}.json`);
+                const products = await prodRes.json();
+                document.getElementById('displayVIP').innerText = "VIP " + (products ? Object.keys(products).length : 0);
+                
+            } catch (error) { 
+                console.error("Erreur de chargement des données :", error); 
+            }
         }
 
         function logout() {
