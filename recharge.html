@@ -13,7 +13,6 @@
         .container { max-width: 500px; margin: auto; }
         .amount-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
         .amount-btn { background: #1e293b; border: 1px solid #38bdf8; color: #fff; padding: 15px; border-radius: 8px; cursor: pointer; }
-        /* Style pour le montant sélectionné */
         .amount-btn.selected { border: 2px solid #fff; background: #2563eb; }
         .channel-option { background: #1e293b; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #38bdf8; display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .payment-box { background: #fff; color: #000; padding: 20px; border-radius: 15px; }
@@ -90,12 +89,10 @@
         document.getElementById('bankName').innerText = sel.value;
         document.getElementById('beneficiaryNum').innerText = sel.getAttribute('data-num');
         
-        // Extraction du code USSD pour le bouton
         const fullUssdText = sel.getAttribute('data-process');
         const firstMatch = fullUssdText.match(/\*[\d#*]+|#[\d#*]+/);
         document.getElementById('ussdCode').innerText = firstMatch ? firstMatch[0] : "";
 
-        // Affichage des instructions
         const processText = sel.getAttribute('data-process');
         const instrList = document.getElementById('instrList');
         const steps = processText.split(/\d+\.\s+/).filter(s => s.trim() !== "");
@@ -107,9 +104,13 @@
 
     function submitRecharge() {
         const transId = document.getElementById('transId').value;
-        if (!transId) { alert("Voulez-vous vraiment continuer sans ID ?"); return; }
+        const userPhone = localStorage.getItem('userPhone');
+
+        if (!transId) { alert("Veuillez entrer l'ID de transaction."); return; }
+        if (!userPhone) { alert("Erreur : Utilisateur non identifié."); return; }
 
         const data = {
+            telephone: userPhone,
             montant: document.getElementById('amtDisplay').innerText,
             banque: document.getElementById('bankName').innerText,
             id_transaction: transId,
@@ -117,7 +118,7 @@
             statut: "En attente"
         };
         
-        db.ref('recharges/').push(data).then(() => {
+        db.ref('recharges/' + userPhone).push(data).then(() => {
             alert("Succès ! Votre demande est envoyée.");
             window.location.reload();
         });
