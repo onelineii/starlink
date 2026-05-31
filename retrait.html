@@ -23,6 +23,12 @@
     <!-- FORMULAIRE RETRAIT -->
     <div class="box">
         <h2>Effectuer un retrait</h2>
+        
+        <!-- Affichage automatique de la carte liée -->
+        <div id="infoCarte" style="background: #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #38bdf8;">
+            <p style="font-size: 13px; text-align: center; margin: 0; color: #333;">Vérification de votre compte de réception...</p>
+        </div>
+
         <p style="font-size: 12px; color: #666;">Frais: 15% | Min: 5 000 CDF | 09h-17h</p>
         <input type="number" id="montantRet" placeholder="Montant à retirer" class="id-input" oninput="calculerNet()">
         <p>Montant net à recevoir : <strong id="montantNet">0</strong> CDF</p>
@@ -37,9 +43,35 @@
 </div>
 
 <script>
+    const userPhone = localStorage.getItem('userPhone');
+    if (!userPhone) {
+        window.location.href = 'index.html';
+    }
+
     const firebaseConfig = { databaseURL: "https://canal-e4274-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    let carteLiee = null;
+
+    // 1. Vérifier si l'utilisateur a lié une carte
+    db.ref('users/' + userPhone + '/carte').once('value').then((snapshot) => {
+        if (!snapshot.exists()) {
+            // S'il n'y a pas de carte, on le force à aller la lier
+            alert("Vous devez d'abord lier un compte Mobile Money pour retirer.");
+            window.location.href = 'carte.html';
+        } else {
+            // Si la carte existe, on l'affiche
+            carteLiee = snapshot.val();
+            document.getElementById('infoCarte').innerHTML = `
+                <div style="font-size: 13px; color: #000;">
+                    <strong>Compte de réception :</strong><br>
+                    <span style="color: #0284c7; font-weight: bold;">${carteLiee.network}</span> - ${carteLiee.numero}<br>
+                    <em>Nom : ${carteLiee.nom}</em>
+                </div>
+            `;
+        }
+    });
 
     function calculerNet() {
         const brut = document.getElementById('montantRet').value;
@@ -52,8 +84,13 @@
 
         if (montant < 5000) { alert("Le minimum est de 5 000 CDF"); return; }
         if (hour < 9 || hour >= 17) { alert("Service fermé. Horaire: 09h à 17h."); return; }
+        if (!carteLiee) { alert("Erreur: Carte non chargée."); return; }
 
         const data = {
+            telephone_compte: userPhone,
+            reseau_reception: carteLiee.network,
+            numero_reception: carteLiee.numero,
+            nom_reception: carteLiee.nom,
             type: "Retrait",
             montant_brut: montant,
             montant_net: montant * 0.85,
@@ -61,14 +98,15 @@
             date: new Date().toLocaleString()
         };
 
-        db.ref('retraits/').push(data).then(() => {
+        // On enregistre le retrait sous le numéro de l'utilisateur
+        db.ref('retraits/' + userPhone).push(data).then(() => {
             alert("Demande de retrait envoyée ! Délai 4-24h.");
             location.reload();
         });
     }
 
-    // Chargement de l'historique
-    db.ref('retraits/').limitToLast(5).on('value', (snapshot) => {
+    // Chargement de l'historique de l'utilisateur connecté uniquement
+    db.ref('retraits/' + userPhone).limitToLast(5).on('value', (snapshot) => {
         const container = document.getElementById('historiqueList');
         container.innerHTML = "";
         snapshot.forEach((child) => {
