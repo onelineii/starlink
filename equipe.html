@@ -1,0 +1,229 @@
+ <!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink - Équipe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { margin: 0; background-color: #0f172a; color: #fff; padding-bottom: 80px; }
+
+        .team-header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 3px solid #38bdf8;
+        }
+        .team-header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+        .team-header p { font-size: 13px; color: #94a3b8; margin-top: 10px; }
+
+        .commission-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 20px;
+            margin-top: -30px;
+        }
+        .comm-card {
+            background: #1e293b;
+            padding: 15px 5px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #38bdf8;
+        }
+        .lv-badge {
+            display: inline-block;
+            background: #38bdf8;
+            color: #0f172a;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .comm-rate { font-size: 11px; font-weight: bold; margin-bottom: 5px; color: #38bdf8; }
+        .comm-stats { font-size: 10px; color: #cbd5e1; line-height: 1.4; }
+
+        .nav-buttons { display: flex; justify-content: center; gap: 15px; padding: 0 20px 20px; }
+        .btn-outline {
+            border: 1px solid #38bdf8;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            text-decoration: none;
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .invite-section {
+            background: #1e293b;
+            margin: 0 20px;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #38bdf8;
+        }
+        .invite-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #fff; }
+        
+        .copy-box {
+            display: flex;
+            align-items: center;
+            background: #0f172a;
+            padding: 10px 15px;
+            border-radius: 25px;
+            margin-bottom: 15px;
+            border: 1px solid #38bdf8;
+        }
+        .copy-text { flex: 1; font-size: 13px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-copy {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .progression-banner {
+            background: #38bdf8;
+            color: #0f172a;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            border-top: 2px solid #38bdf8;
+        }
+        .nav-item { text-decoration: none; color: #94a3b8; text-align: center; font-size: 11px; }
+        .nav-item.active { color: #38bdf8; font-weight: bold; }
+        .nav-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="team-header">
+        <h1>STARLINK TEAM</h1>
+        <p>Invitez vos partenaires dans la constellation</p>
+    </div>
+
+    <div class="commission-grid">
+        <div class="comm-card">
+            <div class="lv-badge">Lv1</div>
+            <div class="comm-rate">35%</div>
+            <div class="comm-stats">Membres: <span id="countLv1">0</span><br><span id="rewardLv1">0 FC</span></div>
+        </div>
+        <div class="comm-card">
+            <div class="lv-badge">Lv2</div>
+            <div class="comm-rate">2%</div>
+            <div class="comm-stats">Membres: <span id="countLv2">0</span><br><span id="rewardLv2">0 FC</span></div>
+        </div>
+        <div class="comm-card">
+            <div class="lv-badge">Lv3</div>
+            <div class="comm-rate">1%</div>
+            <div class="comm-stats">Membres: <span id="countLv3">0</span><br><span id="rewardLv3">0 FC</span></div>
+        </div>
+    </div>
+
+    <div class="nav-buttons">
+        <a href="taches.html" class="btn-outline">Missions</a>
+        <a href="historique_equipe.html" class="btn-outline">Historique</a>
+    </div>
+
+    <div class="invite-section">
+        <div class="invite-title">Code & Lien d'invitation</div>
+        <div class="copy-box">
+            <div class="copy-text" id="inviteCode">Chargement...</div>
+            <button class="btn-copy" onclick="copyText('inviteCode')">Copier</button>
+        </div>
+        <div class="copy-box">
+            <div class="copy-text" id="inviteLink">Chargement...</div>
+            <button class="btn-copy" onclick="copyText('inviteLink')">Copier</button>
+        </div>
+    </div>
+
+    <div class="progression-banner">
+        <h2>Total Équipe</h2>
+        <div class="progression-val" id="totalTeam">0</div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-home nav-icon"></i>Accueil</a>
+        <a href="produit.html" class="nav-item"><i class="fas fa-box nav-icon"></i>Plans</a>
+        <a href="equipe.html" class="nav-item active"><i class="fas fa-users nav-icon"></i>Équipe</a>
+        <a href="profil.html" class="nav-item"><i class="fas fa-user nav-icon"></i>Moi</a>
+    </nav>
+
+    <script>
+        const dbUrl = "https://canal-e4274-default-rtdb.firebaseio.com/users";
+        const userPhone = localStorage.getItem('userPhone');
+        const baseUrl = "https://traders-first.github.io/traders-/";
+
+        if (!userPhone) { window.location.href = 'index.html'; }
+
+        const myInviteCode = userPhone.slice(-6);
+        document.getElementById('inviteCode').innerText = myInviteCode;
+        document.getElementById('inviteLink').innerText = `${baseUrl}register.html?ref=${myInviteCode}`;
+
+        function copyText(id) {
+            navigator.clipboard.writeText(document.getElementById(id).innerText).then(() => alert("Copié !"));
+        }
+
+        async function loadTeamData() {
+            try {
+                const response = await fetch(`${dbUrl}.json`);
+                const users = await response.json();
+                if (!users) return;
+
+                let lv1 = [], lv2 = [], lv3 = [];
+                let g1 = 0, g2 = 0, g3 = 0;
+
+                for (let id in users) {
+                    let u = users[id];
+                    if (u.referredBy === myInviteCode) {
+                        lv1.push(u.phone.slice(-6));
+                        g1 += parseFloat(u.rewardFromUser || 0);
+                    }
+                }
+                for (let id in users) {
+                    let u = users[id];
+                    if (lv1.includes(u.referredBy)) {
+                        lv2.push(u.phone.slice(-6));
+                        g2 += parseFloat(u.commissionLv2 || 0);
+                    }
+                }
+                for (let id in users) {
+                    let u = users[id];
+                    if (lv2.includes(u.referredBy)) {
+                        lv3.push(u.phone.slice(-6));
+                        g3 += parseFloat(u.commissionLv3 || 0);
+                    }
+                }
+
+                document.getElementById('countLv1').innerText = lv1.length;
+                document.getElementById('rewardLv1').innerText = g1.toLocaleString() + " FC";
+                document.getElementById('countLv2').innerText = lv2.length;
+                document.getElementById('rewardLv2').innerText = g2.toLocaleString() + " FC";
+                document.getElementById('countLv3').innerText = lv3.length;
+                document.getElementById('rewardLv3').innerText = g3.toLocaleString() + " FC";
+                document.getElementById('totalTeam').innerText = (lv1.length + lv2.length + lv3.length);
+            } catch (e) { console.error(e); }
+        }
+        loadTeamData();
+    </script>
+</body>
+</html>
