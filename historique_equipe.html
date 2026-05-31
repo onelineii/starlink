@@ -89,30 +89,81 @@
 
         async function loadTeamHistory() {
             try {
-                const [uRes, pRes] = await Promise.all([fetch(`${dbUrl}/users.json`), fetch(`${dbUrl}/purchases.json`)]);
-                const users = await uRes.json(), purchases = await pRes.json();
-                let total = 0, lv1C = [], lv2C = [];
+                const [uRes, pRes] = await Promise.all([
+                    fetch(`${dbUrl}/users.json`),
+                    fetch(`${dbUrl}/purchases.json`)
+                ]);
+                const users = await uRes.json();
+                const purchases = await pRes.json();
+                
+                if (!users) return;
 
-                const fill = (c, u, i) => {
-                    c.innerHTML += `<div class="member-card">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="member-avatar"><i class="fas fa-user"></i></div>
-                            <div class="member-details"><h4>${u.phone.replace(/(\d{3})\d{3}(\d{3})/, '$1xxx$2')}</h4><p>Investi: ${i.toLocaleString()} FC</p></div>
-                        </div>
-                        <div class="member-status ${i > 0 ? 'status-active' : 'status-inactive'}">${i > 0 ? 'VIP' : 'Inactif'}</div>
-                    </div>`;
+                let total = 0;
+                let lv1Codes = [];
+                let lv2Codes = [];
+
+                const fill = (containerId, phone, investment) => {
+                    document.getElementById(containerId).innerHTML += `
+                        <div class="member-card">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div class="member-avatar"><i class="fas fa-user"></i></div>
+                                <div class="member-details">
+                                    <h4>${phone.replace(/(\d{3})\d{3}(\d{3})/, '$1xxx$2')}</h4>
+                                    <p>Investi: ${investment.toLocaleString()} FC</p>
+                                </div>
+                            </div>
+                            <div class="member-status ${investment > 0 ? 'status-active' : 'status-inactive'}">
+                                ${investment > 0 ? 'VIP' : 'Inactif'}
+                            </div>
+                        </div>`;
                 };
 
-                for(let id in users) {
-                    let u = users[id], i = 0;
-                    if(purchases && purchases[u.phone]) Object.values(purchases[u.phone]).forEach(p => i += parseFloat(p.price || 0));
-                    
-                    if(u.referredBy === myInviteCode) { lv1C.push(u.phone.slice(-6)); total += i; fill(document.getElementById('lv1'), u, i); }
-                    else if(lv1C.includes(u.referredBy)) { lv2C.push(u.phone.slice(-6)); total += i; fill(document.getElementById('lv2'), u, i); }
-                    else if(lv2C.includes(u.referredBy)) { total += i; fill(document.getElementById('lv3'), u, i); }
+                // 1. Identification Lv1 et Calculs
+                for (let phone in users) {
+                    let u = users[phone];
+                    let inv = 0;
+                    if (purchases && purchases[phone]) {
+                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
+                    }
+
+                    if (u.referredBy === myInviteCode) {
+                        lv1Codes.push(phone.slice(-6));
+                        total += inv;
+                        fill('lv1', phone, inv);
+                    }
                 }
+
+                // 2. Identification Lv2
+                for (let phone in users) {
+                    let u = users[phone];
+                    let inv = 0;
+                    if (purchases && purchases[phone]) {
+                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
+                    }
+
+                    if (lv1Codes.includes(u.referredBy)) {
+                        lv2Codes.push(phone.slice(-6));
+                        total += inv;
+                        fill('lv2', phone, inv);
+                    }
+                }
+
+                // 3. Identification Lv3
+                for (let phone in users) {
+                    let u = users[phone];
+                    let inv = 0;
+                    if (purchases && purchases[phone]) {
+                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
+                    }
+
+                    if (lv2Codes.includes(u.referredBy)) {
+                        total += inv;
+                        fill('lv3', phone, inv);
+                    }
+                }
+
                 document.getElementById('totalTeamInvestment').innerText = total.toLocaleString() + " FC";
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Erreur historique:", e); }
         }
         loadTeamHistory();
     </script>
