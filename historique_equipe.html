@@ -8,47 +8,17 @@
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         body { margin: 0; background-color: #0f172a; color: #fff; padding-bottom: 30px; }
-
         .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 3px solid #38bdf8; }
         .header a { color: #38bdf8; text-decoration: none; }
-        
         .container { padding: 20px; }
-
-        .team-investment-box {
-            background: #1e293b;
-            color: #fff;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 25px;
-            border: 1px solid #38bdf8;
-        }
-        .team-investment-box span { font-size: 13px; color: #94a3b8; text-transform: uppercase; }
+        .team-investment-box { background: #1e293b; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 25px; border: 1px solid #38bdf8; }
         .team-investment-box h2 { margin: 10px 0 0; font-size: 28px; font-weight: bold; color: #38bdf8; }
-
         .tabs { display: flex; background: #1e293b; border-radius: 10px; padding: 5px; margin-bottom: 20px; border: 1px solid #38bdf8; }
-        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; font-weight: bold; font-size: 13px; color: #94a3b8; cursor: pointer; border-radius: 8px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; font-weight: bold; color: #94a3b8; cursor: pointer; border-radius: 8px; }
         .tab-btn.active { background: #38bdf8; color: #0f172a; }
-
         .member-list { display: none; flex-direction: column; gap: 12px; }
         .member-list.active { display: flex; }
-
-        .member-card {
-            background: #1e293b;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #38bdf8;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .member-avatar { background: #0f172a; color: #38bdf8; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #38bdf8; }
-        .member-details h4 { margin: 0 0 4px; font-size: 14px; }
-        .member-details p { margin: 0; font-size: 11px; color: #94a3b8; }
-        
-        .member-status { font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; }
-        .status-active { background: #064e3b; color: #34d399; }
-        .status-inactive { background: #7f1d1d; color: #f87171; }
+        .member-card { background: #1e293b; padding: 15px; border-radius: 12px; border: 1px solid #38bdf8; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -60,16 +30,14 @@
 
     <div class="container">
         <div class="team-investment-box">
-            <span>Investissement Total Équipe</span>
+            <span>Investissement Total</span>
             <h2 id="totalTeamInvestment">0 FC</h2>
         </div>
-
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab(event, 'lv1')">Lv 1</button>
             <button class="tab-btn" onclick="switchTab(event, 'lv2')">Lv 2</button>
             <button class="tab-btn" onclick="switchTab(event, 'lv3')">Lv 3</button>
         </div>
-
         <div id="lv1" class="member-list active"></div>
         <div id="lv2" class="member-list"></div>
         <div id="lv3" class="member-list"></div>
@@ -88,81 +56,66 @@
 
         async function loadTeamHistory() {
             try {
-                const [uRes, pRes] = await Promise.all([
-                    fetch(`${dbUrl}/users.json`),
-                    fetch(`${dbUrl}/purchases.json`)
-                ]);
+                const uRes = await fetch(`${dbUrl}/users.json`);
+                const pRes = await fetch(`${dbUrl}/purchases.json`);
                 const users = await uRes.json();
                 const purchases = await pRes.json();
                 
                 if (!users) return;
 
                 let total = 0;
-                let lv1Phones = [];
-                let lv2Phones = [];
+                let lv1Phones = [], lv2Phones = [];
 
-                const fill = (containerId, phone, investment) => {
-                    document.getElementById(containerId).innerHTML += `
+                const getInvestment = (phone) => {
+                    if (!purchases || !purchases[phone]) return 0;
+                    let sum = 0;
+                    Object.values(purchases[phone]).forEach(p => sum += parseFloat(p.price || 0));
+                    return sum;
+                };
+
+                const fill = (id, phone, inv) => {
+                    document.getElementById(id).innerHTML += `
                         <div class="member-card">
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <div class="member-avatar"><i class="fas fa-user"></i></div>
-                                <div class="member-details">
-                                    <h4>${phone.replace(/(\d{3})\d{3}(\d{3})/, '$1xxx$2')}</h4>
-                                    <p>Investi: ${investment.toLocaleString()} FC</p>
-                                </div>
-                            </div>
-                            <div class="member-status ${investment > 0 ? 'status-active' : 'status-inactive'}">
-                                ${investment > 0 ? 'VIP' : 'Inactif'}
-                            </div>
+                            <div><h4>${phone}</h4><p>Investi: ${inv.toLocaleString()} FC</p></div>
+                            <div style="color:${inv>0?'#34d399':'#f87171'}">${inv>0?'VIP':'Inactif'}</div>
                         </div>`;
                 };
 
-                // 1. Identification Lv1 : ceux dont le "referredBy" est le numéro complet de l'utilisateur actuel
+                // Tri par niveau
                 for (let phone in users) {
                     let u = users[phone];
-                    let inv = 0;
-                    if (purchases && purchases[phone]) {
-                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
-                    }
+                    let inv = getInvestment(phone);
 
                     if (u.referredBy === userPhone) {
-                        lv1Phones.push(phone); // On stocke le numéro complet
+                        lv1Phones.push(phone);
                         total += inv;
                         fill('lv1', phone, inv);
                     }
                 }
-
-                // 2. Identification Lv2 : ceux dont le parrain est un membre de la liste lv1Phones
-                for (let phone in users) {
-                    let u = users[phone];
-                    let inv = 0;
-                    if (purchases && purchases[phone]) {
-                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
+                
+                lv1Phones.forEach(p1 => {
+                    for (let phone in users) {
+                        if (users[phone].referredBy === p1) {
+                            lv2Phones.push(phone);
+                            let inv = getInvestment(phone);
+                            total += inv;
+                            fill('lv2', phone, inv);
+                        }
                     }
+                });
 
-                    if (lv1Phones.includes(u.referredBy)) {
-                        lv2Phones.push(phone);
-                        total += inv;
-                        fill('lv2', phone, inv);
+                lv2Phones.forEach(p2 => {
+                    for (let phone in users) {
+                        if (users[phone].referredBy === p2) {
+                            let inv = getInvestment(phone);
+                            total += inv;
+                            fill('lv3', phone, inv);
+                        }
                     }
-                }
-
-                // 3. Identification Lv3 : ceux dont le parrain est un membre de la liste lv2Phones
-                for (let phone in users) {
-                    let u = users[phone];
-                    let inv = 0;
-                    if (purchases && purchases[phone]) {
-                        Object.values(purchases[phone]).forEach(p => inv += parseFloat(p.price || 0));
-                    }
-
-                    if (lv2Phones.includes(u.referredBy)) {
-                        total += inv;
-                        fill('lv3', phone, inv);
-                    }
-                }
+                });
 
                 document.getElementById('totalTeamInvestment').innerText = total.toLocaleString() + " FC";
-            } catch (e) { console.error("Erreur historique:", e); }
+            } catch (e) { console.error("Erreur:", e); }
         }
         loadTeamHistory();
     </script>
