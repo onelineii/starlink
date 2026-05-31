@@ -189,28 +189,36 @@
                 const users = await response.json();
                 if (!users) return;
 
+                // Conversion de l'objet Firebase en tableau utilisable
                 const userList = Object.keys(users).map(key => ({ ...users[key], phone: key }));
                 
-                // Filtrage utilisant .slice(-6) sur le referredBy pour être sûr de la correspondance
+                // --- CALCULS ---
+                // Niveau 1
                 const lv1 = userList.filter(u => u.referredBy && String(u.referredBy).slice(-6) === myInviteCode);
                 const g1 = lv1.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv1 || 0), 0);
 
+                // Niveau 2
                 const lv1Codes = lv1.map(u => u.phone.slice(-6));
                 const lv2 = userList.filter(u => u.referredBy && lv1Codes.includes(String(u.referredBy).slice(-6)));
                 const g2 = lv2.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv2 || 0), 0);
 
+                // Niveau 3
                 const lv2Codes = lv2.map(u => u.phone.slice(-6));
                 const lv3 = userList.filter(u => u.referredBy && lv2Codes.includes(String(u.referredBy).slice(-6)));
                 const g3 = lv3.reduce((acc, u) => acc + parseFloat(u.gainParrainageLv3 || 0), 0);
 
+                // --- AFFICHAGE ---
                 document.getElementById('countLv1').innerText = lv1.length;
                 document.getElementById('rewardLv1').innerText = g1.toLocaleString() + " FC";
+                
                 document.getElementById('countLv2').innerText = lv2.length;
                 document.getElementById('rewardLv2').innerText = g2.toLocaleString() + " FC";
+                
                 document.getElementById('countLv3').innerText = lv3.length;
                 document.getElementById('rewardLv3').innerText = g3.toLocaleString() + " FC";
+                
                 document.getElementById('totalTeam').innerText = (lv1.length + lv2.length + lv3.length);
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Erreur chargement équipe:", e); }
         }
         loadTeamData();
     </script>
