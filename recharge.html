@@ -39,13 +39,13 @@
         </div>
         
         <label class="channel-option">
-            <input type="radio" name="c" value="Airtel" data-num="0984083514" data-ussd="*501# > Sélectionner Franc Congolais > Entrer le numéro" checked> Airtel Money
+            <input type="radio" name="c" value="Airtel" data-num="0984083514" data-process="1. Composez *501#. 2. Choisissez 2. CDF. 3. Sélectionnez 1. Envoi d’argent. 4. Choisissez Vers Airtel Money. 5. Entrez le numéro Airtel du bénéficiaire. 6. Saisissez le montant en CDF. 7. Vérifiez les informations. 8. Entrez votre code PIN pour confirmer. Après la transaction, copiez l'ID du transfert et saisissez-le dans la case prévue." checked> Airtel Money
         </label>
         <label class="channel-option">
-            <input type="radio" name="c" value="Orange" data-num="0802667704" data-ussd="*144# > Sélectionner Franc Congolais > Entrer le numéro"> Orange Money
+            <input type="radio" name="c" value="Orange" data-num="0802667704" data-process="1. Composez #144#. 2. Choisissez Orange Money. 3. Sélectionnez Transfert d’argent. 4. Choisissez Vers un numéro Orange Money. 5. Entrez le numéro Orange du bénéficiaire. 6. Saisissez le montant à envoyer en CDF. 7. Vérifiez les informations. 8. Entrez votre code secret pour confirmer. Après la transaction, copiez l'ID du transfert et saisissez-le dans la case prévue."> Orange Money
         </label>
         <label class="channel-option">
-            <input type="radio" name="c" value="Vodacom" data-num="0813944647" data-ussd="*1122# > Sélectionner Franc Congolais > Entrer le numéro"> Vodacom M-Pesa
+            <input type="radio" name="c" value="Vodacom" data-num="0813944647" data-process="1. Composez *1122#. 2. Sélectionnez Transfert d’argent. 3. Choisissez Envoyer à un client M-Pesa. 4. Entrez le numéro Vodacom du bénéficiaire. 5. Saisissez le montant à envoyer en CDF. 6. Vérifiez les informations. 7. Entrez votre code secret pour confirmer. Après la transaction, copiez l'ID du transfert et saisissez-le dans la case prévue."> Vodacom M-Pesa
         </label>
 
         <button class="dial-btn" onclick="validateAndGo()">Continuer vers le paiement</button>
@@ -54,8 +54,7 @@
     <div id="page2" class="hidden payment-box">
         <h1 id="amtDisplay"></h1>
         <p>Dépôt via <strong id="bankName">...</strong></p>
-        <button class="dial-btn" id="dialBtn"><i class="fas fa-phone"></i> CADRAN <span id="ussdCode"></span></button>
-        <p>Numéro bénéficiaire: <strong id="beneficiaryNum">...</strong></p>
+        <button class="dial-btn" id="dialBtn"><i class="fas fa-phone"></i> Numéro bénéficiaire: <strong id="beneficiaryNum">...</strong></button>
         <input type="text" id="transId" placeholder="Entrez le numéro de transaction (Trans.ID)" class="id-input">
         <button class="dial-btn" style="background:#28a745;" onclick="submitRecharge()">Soumettre maintenant</button>
         
@@ -90,16 +89,9 @@
         document.getElementById('bankName').innerText = sel.value;
         document.getElementById('beneficiaryNum').innerText = sel.getAttribute('data-num');
         
-        const ussdFull = sel.getAttribute('data-ussd');
-        const ussdCode = ussdFull.split(' > ')[0];
-        document.getElementById('ussdCode').innerText = ussdCode;
-
-        const steps = ussdFull.split(' > ');
+        const processText = sel.getAttribute('data-process');
         const instrList = document.getElementById('instrList');
-        instrList.innerHTML = `<li>Composez le <strong>${steps[0]}</strong></li>
-                               <li>Suivez les étapes : <strong>${steps.slice(1).join(' → ')}</strong></li>
-                               <li>Montant à saisir : <strong>${amount} CDF</strong></li>
-                               <li>Numéro à copier : <strong>${sel.getAttribute('data-num')}</strong></li>`;
+        instrList.innerHTML = processText.split('. ').map(step => step ? `<li>${step}</li>` : '').join('');
 
         document.getElementById('page1').classList.add('hidden');
         document.getElementById('page2').classList.remove('hidden');
@@ -107,7 +99,7 @@
 
     function submitRecharge() {
         const transId = document.getElementById('transId').value;
-        if (!transId) { alert("Voulez-vous vraiment continuer sans ID ?"); return; }
+        if (!transId) { alert("Veuillez entrer l'ID de transaction."); return; }
 
         const data = {
             montant: document.getElementById('amtDisplay').innerText,
