@@ -2,65 +2,128 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Mon Équipe</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink - Historique</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { margin: 0; background-color: #0f172a; color: #fff; }
+
+        .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 3px solid #38bdf8; }
+        .header a { color: #38bdf8; text-decoration: none; font-size: 20px; }
+        .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .tabs { display: flex; background: #1e293b; border-bottom: 2px solid #38bdf8; position: sticky; top: 0; z-index: 100; }
+        .tab-item { flex: 1; text-align: center; padding: 15px 0; font-size: 14px; font-weight: bold; color: #94a3b8; cursor: pointer; }
+        .tab-item.active { color: #38bdf8; background: #0f172a; }
+
+        .content-section { padding: 15px; display: none; min-height: 300px; }
+        .content-section.active { display: block; }
+
+        .empty-state { text-align: center; padding: 80px 20px; color: #475569; }
+        .empty-state i { font-size: 50px; margin-bottom: 20px; display: block; color: #1e293b; }
+
+        .tx-card { background: #1e293b; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #38bdf8; }
+        .tx-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .tx-amount { font-size: 16px; font-weight: bold; color: #38bdf8; }
+        .tx-amount.minus { color: #f87171; }
+        
+        .tx-status { font-size: 10px; font-weight: bold; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
+        .status-en_attente { background: #334155; color: #fbbf24; }
+        .status-valide, .status-paye { background: #064e3b; color: #34d399; }
+        .status-refuse, .status-rejete { background: #7f1d1d; color: #f87171; }
+        
+        .tx-details { font-size: 12px; color: #cbd5e1; line-height: 1.5; }
+        .tx-date { font-size: 10px; color: #64748b; text-align: right; margin-top: 5px; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white p-4">
+<body>
 
-    <h2 class="text-xl font-bold mb-4 text-sky-400 uppercase italic">Mon Équipe</h2>
-    <div id="equipe-container" class="space-y-3">
-        </div>
+    <div class="header">
+        <a href="profil.html"><i class="fas fa-arrow-left"></i></a>
+        <h1>Historique</h1>
+    </div>
 
-    <div id="detailsModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4">
-        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-sm border border-sky-500">
-            <h3 id="modalTitle" class="text-lg font-bold text-white mb-4">Détails</h3>
-            <p id="modalBody" class="text-slate-300 text-sm mb-6"></p>
-            <button onclick="document.getElementById('detailsModal').classList.add('hidden')" class="w-full bg-sky-600 py-2 rounded-lg font-bold">Fermer</button>
-        </div>
+    <div class="tabs">
+        <div class="tab-item active" onclick="openTab(event, 'recharges')">Recharges</div>
+        <div class="tab-item" onclick="openTab(event, 'retraits')">Retraits</div>
+    </div>
+
+    <div id="recharges" class="content-section active">
+        <div class="empty-state"><i class="fas fa-file-invoice-dollar"></i><p>Aucune recharge.</p></div>
+    </div>
+
+    <div id="retraits" class="content-section">
+        <div class="empty-state"><i class="fas fa-hand-holding-usd"></i><p>Aucun retrait.</p></div>
     </div>
 
     <script>
+        // URL du projet Canal
         const mainBaseUrl = "https://canal-e4274-default-rtdb.firebaseio.com";
         const userPhone = localStorage.getItem('userPhone');
 
-        async function fetchEquipe() {
-            const container = document.getElementById('equipe-container');
-            container.innerHTML = "<p class='text-center'>Chargement...</p>";
+        function openTab(evt, tabName) {
+            document.querySelectorAll(".content-section").forEach(s => s.classList.remove("active"));
+            document.querySelectorAll(".tab-item").forEach(t => t.classList.remove("active"));
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        async function fetchHistory() {
+            // Vérification de sécurité session
+            if (!userPhone) {
+                alert("Session expirée, veuillez vous reconnecter.");
+                window.location.href = "login.html";
+                return;
+            }
 
             try {
-                const res = await fetch(`${mainBaseUrl}/users.json`);
-                const allUsers = await res.json();
-                let html = "";
-                let found = false;
+                // Fetch Recharges
+                const rRes = await fetch(`${mainBaseUrl}/recharges_en_attente.json`);
+                const recharges = await rRes.json();
+                renderList('recharges', recharges, false);
 
-                for (let phone in allUsers) {
-                    let user = allUsers[phone];
-                    
-                    // On vérifie si le parrain est bien l'utilisateur connecté
-                    if (user.referredBy === userPhone) {
-                        found = true;
-                        html += `
-                            <div onclick="showDetails('${phone}', ${user.balance || 0})" 
-                                 class="bg-slate-800 p-4 rounded-lg border-l-4 border-sky-500 cursor-pointer hover:bg-slate-700 transition">
-                                <p class="font-bold text-lg">${phone}</p>
-                                <p class="text-xs text-sky-400 uppercase">Cliquez pour voir le solde</p>
-                            </div>
-                        `;
-                    }
-                }
-                container.innerHTML = found ? html : "<p class='text-center text-slate-500'>Aucun filleul pour le moment.</p>";
-            } catch (e) {
-                container.innerHTML = "<p class='text-red-500'>Erreur de chargement.</p>";
+                // Fetch Retraits
+                const tRes = await fetch(`${mainBaseUrl}/retraits.json`);
+                const retraits = await tRes.json();
+                renderList('retraits', retraits, true);
+            } catch (e) { 
+                console.error("Erreur de chargement", e); 
             }
         }
 
-        function showDetails(phone, balance) {
-            document.getElementById('modalTitle').innerText = "Membre : " + phone;
-            document.getElementById('modalBody').innerText = "Solde actuel du membre : " + balance.toLocaleString() + " FC";
-            document.getElementById('detailsModal').classList.remove('hidden');
+        function renderList(containerId, data, isMinus) {
+            const container = document.getElementById(containerId);
+            if (!data) return;
+
+            let html = "";
+            let found = false;
+
+            for (let id in data) {
+                let item = data[id];
+                // Filtrage par numéro utilisateur
+                if (item.userAccount === userPhone || item.user === userPhone) {
+                    found = true;
+                    let amount = item.amount || item.montant || 0;
+                    let status = (item.status || 'en_attente').toLowerCase().replace(' ', '_');
+                    
+                    html += `<div class="tx-card">
+                        <div class="tx-header">
+                            <span class="tx-amount ${isMinus ? 'minus' : ''}">${isMinus ? '-' : '+'} ${parseInt(amount).toLocaleString()} FC</span>
+                            <span class="tx-status status-${status}">${item.status || 'En attente'}</span>
+                        </div>
+                        <div class="tx-details">
+                            Réseau: ${item.network || 'Mobile Money'}<br>
+                            ID: ${item.transactionID || item.transId || 'N/A'}
+                        </div>
+                        <div class="tx-date">${item.date || ''}</div>
+                    </div>`;
+                }
+            }
+            if (found) container.innerHTML = html;
         }
 
-        fetchEquipe();
+        fetchHistory();
     </script>
 </body>
 </html>
