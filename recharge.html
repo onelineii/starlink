@@ -24,65 +24,61 @@
 
 <div class="container">
     <div id="page1">
-        <h2>Recharger (CDF)</h2>
+        <h2 style="color: #38bdf8; text-align: center;">Recharger (CDF)</h2>
         <div class="amount-grid">
-            <button class="amount-btn" onclick="showPayment('15 000')">15 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('30 000')">30 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('60 000')">60 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('120 000')">120 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('250 000')">250 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('450 000')">450 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('1 000 000')">1 000 000 CDF</button>
-            <button class="amount-btn" onclick="showPayment('2 000 000')">2 000 000 CDF</button>
+            <button class="amount-btn" onclick="showPayment('15 000')">15 000 FC</button>
+            <button class="amount-btn" onclick="showPayment('30 000')">30 000 FC</button>
+            <button class="amount-btn" onclick="showPayment('60 000')">60 000 FC</button>
+            <button class="amount-btn" onclick="showPayment('120 000')">120 000 FC</button>
         </div>
         
         <label class="channel-option">
-            <input type="radio" name="c" value="Airtel" data-num="0984083514" data-ussd="*501# > Sélectionner Franc Congolais > Entrer le numéro" checked> Airtel Money
+            <input type="radio" name="c" value="Airtel" data-num="0984083514" data-ussd="*501# > Franc Congolais" checked> Airtel Money
         </label>
         <label class="channel-option">
-            <input type="radio" name="c" value="Orange" data-num="0802667704" data-ussd="*144# > Sélectionner Franc Congolais > Entrer le numéro"> Orange Money
+            <input type="radio" name="c" value="Orange" data-num="0802667704" data-ussd="*144# > Franc Congolais"> Orange Money
         </label>
         <label class="channel-option">
-            <input type="radio" name="c" value="Vodacom" data-num="0813944647" data-ussd="*1122# > Sélectionner Franc Congolais > Entrer le numéro"> Vodacom M-Pesa
+            <input type="radio" name="c" value="Vodacom" data-num="0813944647" data-ussd="*1122# > Franc Congolais"> Vodacom M-Pesa
         </label>
     </div>
 
     <div id="page2" class="hidden payment-box">
-        <h1 id="amtDisplay"></h1>
+        <h1 id="amtDisplay" style="text-align: center;"></h1>
         <p>Dépôt via <strong id="bankName">...</strong></p>
-        <button class="dial-btn" id="dialBtn"><i class="fas fa-phone"></i> CADRAN <span id="ussdCode"></span></button>
-        <p>Numéro bénéficiaire: <strong id="beneficiaryNum">...</strong></p>
+        <button class="dial-btn" id="dialBtn"><i class="fas fa-phone"></i> COMPOSER <span id="ussdCode"></span></button>
+        <p>Numéro bénéficiaire : <br><strong style="font-size: 1.2em; color: #38bdf8;" id="beneficiaryNum">...</strong></p>
+        
         <input type="text" id="transId" placeholder="Entrez le numéro de transaction (Trans.ID)" class="id-input">
-        <button class="dial-btn" style="background:#28a745;" onclick="submitRecharge()">Soumettre maintenant</button>
+        <button class="dial-btn" style="background:#28a745;" onclick="submitRecharge()">Confirmer le paiement</button>
         
         <div class="instructions-box">
-            <h3>Processus d'envoi (CDF)</h3>
+            <h3>Processus d'envoi</h3>
             <ol id="instrList"></ol>
         </div>
     </div>
 </div>
 
 <script>
+    const userPhone = localStorage.getItem('userPhone');
+    if (!userPhone) window.location.href = 'index.html';
+
     const firebaseConfig = { databaseURL: "https://canal-e4274-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     function showPayment(amount) {
         const sel = document.querySelector('input[name="c"]:checked');
-        document.getElementById('amtDisplay').innerText = amount + " CDF";
+        document.getElementById('amtDisplay').innerText = amount + " FC";
         document.getElementById('bankName').innerText = sel.value;
         document.getElementById('beneficiaryNum').innerText = sel.getAttribute('data-num');
-        
-        const ussdFull = sel.getAttribute('data-ussd');
-        const ussdCode = ussdFull.split(' > ')[0];
-        document.getElementById('ussdCode').innerText = ussdCode;
+        document.getElementById('ussdCode').innerText = sel.getAttribute('data-ussd').split(' > ')[0];
 
-        const steps = ussdFull.split(' > ');
         const instrList = document.getElementById('instrList');
-        instrList.innerHTML = `<li>Composez le <strong>${steps[0]}</strong></li>
-                               <li>Suivez les étapes : <strong>${steps.slice(1).join(' → ')}</strong></li>
-                               <li>Montant à saisir : <strong>${amount} CDF</strong></li>
-                               <li>Numéro à copier : <strong>${sel.getAttribute('data-num')}</strong></li>`;
+        instrList.innerHTML = `<li>Composez le <strong>${sel.getAttribute('data-ussd').split(' > ')[0]}</strong></li>
+                               <li>Suivez les étapes du menu</li>
+                               <li>Montant : <strong>${amount} FC</strong></li>
+                               <li>Envoyez vers le : <strong>${sel.getAttribute('data-num')}</strong></li>`;
 
         document.getElementById('page1').classList.add('hidden');
         document.getElementById('page2').classList.remove('hidden');
@@ -93,6 +89,7 @@
         if (!transId) { alert("Veuillez entrer l'ID de transaction."); return; }
 
         const data = {
+            telephone_client: userPhone,
             montant: document.getElementById('amtDisplay').innerText,
             banque: document.getElementById('bankName').innerText,
             id_transaction: transId,
@@ -100,9 +97,10 @@
             statut: "En attente"
         };
         
-        db.ref('recharges/').push(data).then(() => {
-            alert("Succès ! Votre demande est envoyée.");
-            window.location.reload();
+        // Enregistrement dans le dossier personnel de l'utilisateur
+        db.ref('recharges/' + userPhone).push(data).then(() => {
+            alert("Demande envoyée ! Le solde sera mis à jour sous peu.");
+            window.location.href = 'profil.html';
         });
     }
 </script>
